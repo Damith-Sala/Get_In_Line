@@ -31,6 +31,7 @@ export default function QueuesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joiningQueue, setJoiningQueue] = useState<string | null>(null);
+  const [leavingQueue, setLeavingQueue] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
 
   const supabase = createClient();
@@ -109,6 +110,42 @@ export default function QueuesPage() {
     }
   };
 
+  const leaveQueue = async (queueId: string) => {
+    if (!user) {
+      setError('Please log in to leave a queue');
+      return;
+    }
+
+    try {
+      setLeavingQueue(queueId);
+      setError(null);
+
+      const response = await fetch(`/api/queues/${queueId}/leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to leave queue');
+      }
+
+      // Refresh the data to show updated queue entries
+      window.location.reload();
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLeavingQueue(null);
+    }
+  };
+
   const getQueueStats = (queueId: string) => {
     const entries = queueEntries.filter(entry => entry.queue_id === queueId);
     const waitingCount = entries.filter(entry => entry.status === 'waiting').length;
@@ -162,6 +199,12 @@ export default function QueuesPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Available Queues</h1>
           <div className="space-x-4">
+            <Link 
+              href="/my-queues" 
+              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            >
+              My Queues
+            </Link>
             <Link 
               href="/dashboard" 
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -235,15 +278,28 @@ export default function QueuesPage() {
                     </div>
 
                     {userInQueue ? (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                        <p className="text-green-800 text-sm">
-                          ✅ You're in this queue!
-                          {userPosition && (
-                            <span className="block mt-1">
-                              Your position: <strong>#{userPosition}</strong>
-                            </span>
-                          )}
-                        </p>
+                      <div className="space-y-3">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <p className="text-green-800 text-sm">
+                            ✅ You're in this queue!
+                            {userPosition && (
+                              <span className="block mt-1">
+                                Your position: <strong>#{userPosition}</strong>
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => leaveQueue(queue.id)}
+                          disabled={leavingQueue === queue.id}
+                          className={`w-full px-4 py-2 rounded text-center block ${
+                            leavingQueue === queue.id
+                              ? 'bg-gray-400 text-white cursor-not-allowed'
+                              : 'bg-red-600 text-white hover:bg-red-700'
+                          }`}
+                        >
+                          {leavingQueue === queue.id ? 'Leaving...' : 'Leave Queue'}
+                        </button>
                       </div>
                     ) : (
                       <div className="space-y-2">
