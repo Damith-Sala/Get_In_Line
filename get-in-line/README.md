@@ -34,3 +34,33 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Developer Quickstart
+
+Small steps to start developing locally:
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Run the dev server (Next.js 15 + Turbopack):
+
+```bash
+npm run dev
+```
+
+3. Open http://localhost:3000 and visit `/login`, `/signup`, or `/dashboard` to see the starter pages added by this scaffold.
+
+Files of interest:
+
+- `src/app/login/page.tsx` — login page scaffold
+- `src/app/signup/page.tsx` — signup page scaffold
+- `src/app/dashboard/page.tsx` — dashboard scaffold
+
+Next steps suggestions:
+
+- Hook up authentication (NextAuth, Clerk, or custom) for `/login` and `/signup`.
+- Add API routes or server actions to create and manage queues.
+- Add real-time updates with WebSockets or Server-Sent Events for live positions.
