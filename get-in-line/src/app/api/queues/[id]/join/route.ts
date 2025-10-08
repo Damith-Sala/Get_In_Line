@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { queueEntries } from '@/lib/drizzle/schema';
+import { sql } from 'drizzle-orm';
 
 export async function POST(
   request: Request,
@@ -14,8 +15,8 @@ export async function POST(
     const lastEntry = await db
       .select()
       .from(queueEntries)
-      .where({ queueId })
-      .orderBy('position', 'desc')
+      .where(sql`${queueEntries.queueId} = ${queueId}`)
+      .orderBy(queueEntries.position)
       .limit(1);
       
     const position = lastEntry.length > 0 ? lastEntry[0].position + 1 : 1;

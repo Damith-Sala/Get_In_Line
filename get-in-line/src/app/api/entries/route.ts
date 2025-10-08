@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { queueEntries } from '@/lib/drizzle/schema';
+import { sql } from 'drizzle-orm';
 
 export async function PATCH(request: Request) {
   try {
@@ -21,7 +22,7 @@ export async function PATCH(request: Request) {
         updatedAt: new Date(),
         ...(status === 'served' ? { servedAt: new Date() } : {}),
       })
-      .where({ id })
+      .where(sql`${queueEntries.id} = ${id}`)
       .returning();
       
     return NextResponse.json(updated[0]);

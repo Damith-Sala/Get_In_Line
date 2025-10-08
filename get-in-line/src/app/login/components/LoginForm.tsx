@@ -1,13 +1,40 @@
 'use client';
 
-import { FormEvent } from 'react';
+import { FormEvent, useState } from 'react';
 import Link from "next/link";
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 export default function LoginForm() {
-  const handleSubmit = (e: FormEvent) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // TODO: Add login logic here
-    console.log('Login form submitted');
+    setError('');
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      router.push('/dashboard');
+      router.refresh();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -15,20 +42,37 @@ export default function LoginForm() {
       <h1 className="text-2xl font-semibold mb-4">Log in</h1>
       <p className="text-sm mb-6">Sign in to view and manage your queues.</p>
 
+      {error && (
+        <div className="bg-red-50 text-red-500 px-4 py-2 rounded mb-4 text-sm">
+          {error}
+        </div>
+      )}
+
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
         <input
           aria-label="Email"
           className="border rounded px-3 py-2"
           placeholder="Email"
           type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           aria-label="Password"
           className="border rounded px-3 py-2"
           placeholder="Password"
           type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
         />
-        <button className="mt-2 bg-blue-600 text-white rounded px-4 py-2">Sign in</button>
+        <button 
+          className="mt-2 bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-50"
+          disabled={loading}
+        >
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
       </form>
 
       <p className="mt-4 text-sm">

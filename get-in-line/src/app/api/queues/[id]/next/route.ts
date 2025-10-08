@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { queueEntries } from '@/lib/drizzle/schema';
+import { sql } from 'drizzle-orm';
 
 export async function POST(
   request: Request,
@@ -13,8 +14,8 @@ export async function POST(
     const nextInLine = await db
       .select()
       .from(queueEntries)
-      .where({ queueId, status: 'waiting' })
-      .orderBy('position', 'asc')
+      .where(sql`${queueEntries.queueId} = ${queueId} AND ${queueEntries.status} = 'waiting'`)
+      .orderBy(queueEntries.position)
       .limit(1);
       
     if (nextInLine.length === 0) {
@@ -31,7 +32,7 @@ export async function POST(
         status: 'serving',
         updatedAt: new Date(),
       })
-      .where({ id: nextInLine[0].id })
+      .where(sql`${queueEntries.id} = ${nextInLine[0].id}`)
       .returning();
       
     return NextResponse.json(updated[0]);
