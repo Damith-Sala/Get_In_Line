@@ -43,6 +43,7 @@ export default function DashboardPage() {
         </div>
         <nav className="flex gap-4 items-center">
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">Home</Link>
+          <Link href="/queues" className="text-sm text-gray-600 hover:text-gray-900">View Queues</Link>
           <button 
             onClick={handleSignOut}
             className="text-sm text-red-600 hover:text-red-800"

@@ -5,14 +5,13 @@ import { db } from '@/lib/db';
 import { queueEntries, users } from '@/lib/drizzle/schema';
 import { sql, eq } from 'drizzle-orm';
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request) {
   try {
-    const queueId = params.id;
-    const body = await request.json();
-    const { userId: clientUserId } = body;
+    const { queueId } = await request.json();
+    
+    if (!queueId) {
+      return NextResponse.json({ error: 'Queue ID is required' }, { status: 400 });
+    }
     
     // Get authenticated user
     const cookieStore = cookies();
@@ -34,40 +33,25 @@ export async function POST(
       }
     );
 
-    // Try to get the session first, then the user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (sessionError || !session) {
-      console.error('Session error:', sessionError);
+    if (authError || !user) {
       return NextResponse.json({ 
-        error: 'Not authenticated - no session found',
-        details: sessionError?.message 
+        error: 'Not authenticated',
+        authError: authError?.message 
       }, { status: 401 });
     }
 
-    const user = session.user;
-    
-    // Use client-provided userId if server-side auth fails
-    let userId = user?.id || clientUserId;
-    
-    if (!userId) {
-      return NextResponse.json({ 
-        error: 'Not authenticated - no user ID available',
-        debug: {
-          hasSession: !!session,
-          hasUser: !!user,
-          hasClientUserId: !!clientUserId
-        }
-      }, { status: 401 });
-    }
+    const userId = user.id;
 
-    // Check if user exists in custom users table, create if not
+    // Check if user exists in custom users table
     const customUser = await db
       .select()
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
+    // If user doesn't exist in custom table, create them
     if (customUser.length === 0) {
       await db
         .insert(users)
@@ -87,10 +71,10 @@ export async function POST(
       .limit(1);
 
     if (existingEntry.length > 0) {
-      return NextResponse.json(
-        { error: 'You are already in this queue' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        error: 'You are already in this queue',
+        existingEntry: existingEntry[0]
+      }, { status: 400 });
     }
     
     // Get current position (highest position + 1)
@@ -113,11 +97,24 @@ export async function POST(
       })
       .returning();
       
-    return NextResponse.json(entry[0], { status: 201 });
+    return NextResponse.json({
+      success: true,
+      entry: entry[0],
+      debug: {
+        userId,
+        queueId,
+        position,
+        customUserExists: customUser.length > 0,
+        lastEntry: lastEntry[0] || null
+      }
+    });
   } catch (error) {
-    console.error('Join queue error:', error);
+    console.error('Debug join queue error:', error);
     return NextResponse.json(
-      { error: 'Failed to join queue' },
+      { 
+        error: 'Failed to join queue',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

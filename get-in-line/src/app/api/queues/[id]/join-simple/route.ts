@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { queueEntries, users } from '@/lib/drizzle/schema';
 import { sql, eq } from 'drizzle-orm';
@@ -11,54 +9,10 @@ export async function POST(
 ) {
   try {
     const queueId = params.id;
-    const body = await request.json();
-    const { userId: clientUserId } = body;
-    
-    // Get authenticated user
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options });
-          },
-          remove(name: string, options: any) {
-            cookieStore.delete({ name, ...options });
-          },
-        },
-      }
-    );
-
-    // Try to get the session first, then the user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      console.error('Session error:', sessionError);
-      return NextResponse.json({ 
-        error: 'Not authenticated - no session found',
-        details: sessionError?.message 
-      }, { status: 401 });
-    }
-
-    const user = session.user;
-    
-    // Use client-provided userId if server-side auth fails
-    let userId = user?.id || clientUserId;
+    const { userId } = await request.json();
     
     if (!userId) {
-      return NextResponse.json({ 
-        error: 'Not authenticated - no user ID available',
-        debug: {
-          hasSession: !!session,
-          hasUser: !!user,
-          hasClientUserId: !!clientUserId
-        }
-      }, { status: 401 });
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
     // Check if user exists in custom users table, create if not
@@ -69,12 +23,13 @@ export async function POST(
       .limit(1);
 
     if (customUser.length === 0) {
+      // Create user in custom users table
       await db
         .insert(users)
         .values({
           id: userId,
-          email: user.email!,
-          name: user.user_metadata?.name || 'Unknown',
+          email: 'user@example.com', // Placeholder
+          name: 'User',
           password: 'supabase_auth_user',
         });
     }
@@ -113,7 +68,11 @@ export async function POST(
       })
       .returning();
       
-    return NextResponse.json(entry[0], { status: 201 });
+    return NextResponse.json({
+      success: true,
+      entry: entry[0],
+      position: position
+    });
   } catch (error) {
     console.error('Join queue error:', error);
     return NextResponse.json(
