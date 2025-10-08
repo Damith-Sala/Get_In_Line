@@ -45,6 +45,7 @@ export default function DashboardPage() {
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">Home</Link>
           <Link href="/queues" className="text-sm text-gray-600 hover:text-gray-900">View Queues</Link>
           <Link href="/my-queues" className="text-sm text-gray-600 hover:text-gray-900">My Queues</Link>
+          <Link href="/business-admin" className="text-sm text-blue-600 hover:text-blue-800 font-medium">Business Admin</Link>
           <button 
             onClick={handleSignOut}
             className="text-sm text-red-600 hover:text-red-800"
