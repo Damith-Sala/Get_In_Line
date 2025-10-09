@@ -21,7 +21,7 @@ export async function POST(
       return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
     }
 
-    if (!queue[0].is_active) {
+    if (!queue[0].isActive) {
       return NextResponse.json({ error: 'Queue is not active' }, { status: 400 });
     }
 
@@ -39,15 +39,14 @@ export async function POST(
       userId: null, // Guest entry
       position: nextPosition,
       status: 'waiting',
-      joinedAt: new Date(),
-      guestName: `Guest ${nextPosition}`, // Temporary name
+      enteredAt: new Date(),
     }).returning();
 
     return NextResponse.json({
       message: 'Successfully joined queue as guest',
       entry: guestEntry[0],
       position: nextPosition,
-      estimatedWaitTime: queue[0].estimated_wait_time,
+      estimatedWaitTime: queue[0].estimatedWaitTime,
     });
 
   } catch (error) {

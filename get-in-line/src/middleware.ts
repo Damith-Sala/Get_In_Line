@@ -47,13 +47,16 @@ export async function middleware(request: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
 
-  // If user is not signed in and trying to access protected routes, redirect to /login
-  if (!session && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/signup') && request.nextUrl.pathname !== '/') {
+  // Check if session exists and is not expired
+  const isSessionValid = session && session.expires_at && session.expires_at > Date.now() / 1000
+
+  // If user is not signed in or session is expired and trying to access protected routes, redirect to /login
+  if (!isSessionValid && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/signup') && request.nextUrl.pathname !== '/') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // If user is signed in and the current path is /login or /signup, redirect to /dashboard
-  if (session && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
+  // If user is signed in with valid session and the current path is /login or /signup, redirect to /dashboard
+  if (isSessionValid && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -61,5 +64,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/business-admin/:path*', '/login', '/signup']
+  matcher: ['/dashboard/:path*', '/business-admin/:path*', '/super-admin/:path*', '/login', '/signup']
 }

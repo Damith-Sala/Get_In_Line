@@ -308,7 +308,7 @@ export default function QueuesPage() {
                         ) : (
                           <button
                             onClick={() => joinQueue(queue.id)}
-                            disabled={joiningQueue === queue.id || (queue.max_size && stats.total >= queue.max_size)}
+                            disabled={joiningQueue === queue.id || (queue.max_size ? stats.total >= queue.max_size : false)}
                             className={`w-full px-4 py-2 rounded text-center block ${
                               joiningQueue === queue.id
                                 ? 'bg-gray-400 text-white cursor-not-allowed'

@@ -111,7 +111,7 @@ export async function GET(
     const servedEntries = queueEntriesData.filter(e => e.status === 'served' && e.servedAt);
     const averageWaitTime = servedEntries.length > 0 
       ? servedEntries.reduce((sum, entry) => {
-          const waitTime = new Date(entry.servedAt!).getTime() - new Date(entry.enteredAt).getTime();
+          const waitTime = new Date(entry.servedAt!).getTime() - new Date(entry.enteredAt || new Date()).getTime();
           return sum + (waitTime / (1000 * 60)); // Convert to minutes
         }, 0) / servedEntries.length
       : 0;
@@ -119,7 +119,7 @@ export async function GET(
     // Calculate peak hour
     const hourlyStats = new Array(24).fill(0);
     queueEntriesData.forEach(entry => {
-      const hour = new Date(entry.enteredAt).getHours();
+      const hour = new Date(entry.enteredAt || new Date()).getHours();
       hourlyStats[hour]++;
     });
     const peakHour = hourlyStats.indexOf(Math.max(...hourlyStats));
@@ -135,7 +135,7 @@ export async function GET(
       nextDate.setDate(nextDate.getDate() + 1);
 
       const dayEntries = queueEntriesData.filter(entry => {
-        const entryDate = new Date(entry.enteredAt);
+        const entryDate = new Date(entry.enteredAt || new Date());
         return entryDate >= date && entryDate < nextDate;
       });
 

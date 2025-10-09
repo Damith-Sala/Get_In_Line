@@ -9,36 +9,54 @@ export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string>('customer');
+  const [userRole, setUserRole] = useState<string>('user');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function getUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      
-      if (user) {
-        // Get user role from database
-        try {
-          const response = await fetch('/api/sync-user');
-          if (response.ok) {
-            const userData = await response.json();
-            setUserRole(userData.role || 'customer');
-          }
-        } catch (error) {
-          console.error('Error fetching user role:', error);
+      try {
+        setLoading(true);
+        
+        // Get authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          console.error('Auth error:', authError);
+          router.push('/login');
+          return;
         }
+        
+        setUser(user);
+        
+        // Get user role from database using new endpoint
+        const response = await fetch('/api/users/me');
+        if (response.ok) {
+          const userData = await response.json();
+          setUserRole(userData.role || 'user');
+        } else {
+          console.error('Failed to fetch user data');
+          setUserRole('user'); // Default fallback
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+        router.push('/login');
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     }
     getUser();
-  }, []);
+  }, [router]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    try {
+      await supabase.auth.signOut();
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Force redirect even if sign out fails
+      router.push('/login');
+    }
   };
 
   if (loading) {
@@ -60,7 +78,7 @@ export default function DashboardPage() {
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">Home</Link>
           <Link href="/queues" className="text-sm text-gray-600 hover:text-gray-900">View Queues</Link>
           <Link href="/my-queues" className="text-sm text-gray-600 hover:text-gray-900">My Queues</Link>
-          {userRole !== 'customer' && (
+          {userRole !== 'user' && (
             <Link href="/business-admin" className="text-sm text-blue-600 hover:text-blue-800 font-medium">Business Admin</Link>
           )}
           <button 
@@ -74,7 +92,7 @@ export default function DashboardPage() {
 
       <main>
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {userRole === 'customer' ? (
+          {userRole === 'user' ? (
             // Customer Dashboard
             <>
               <div className="p-6 bg-white shadow-sm rounded-lg border">

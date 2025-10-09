@@ -86,22 +86,21 @@ export default function BusinessAdminPage() {
           return;
         }
 
-        // Get user's business using API
-        const usersResponse = await fetch('/api/users');
+        // Get user's business using new efficient endpoint
+        const usersResponse = await fetch('/api/users/me');
         if (!usersResponse.ok) {
           setError('Failed to fetch user data');
           return;
         }
         
-        const users = await usersResponse.json();
-        const userRecord = users.find((u: any) => u.id === user.id);
+        const userData = await usersResponse.json();
         
-        if (!userRecord || !userRecord.businessId) {
+        if (!userData.businessId) {
           setError('No business associated with your account');
           return;
         }
 
-        const businessId = userRecord.businessId;
+        const businessId = userData.businessId;
 
         // Fetch business details using API
         const businessResponse = await fetch(`/api/businesses/${businessId}`);
@@ -156,8 +155,14 @@ export default function BusinessAdminPage() {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/login';
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Force redirect even if sign out fails
+      window.location.href = '/login';
+    }
   };
 
   const handleDeleteQueue = async (queueId: string) => {

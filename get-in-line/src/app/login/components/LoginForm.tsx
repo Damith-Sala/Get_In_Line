@@ -38,12 +38,14 @@ export default function LoginForm() {
       }
 
       // Check user role and redirect accordingly
-      const usersResponse = await fetch('/api/users');
+      const usersResponse = await fetch('/api/users/me');
       if (usersResponse.ok) {
-        const users = await usersResponse.json();
-        const currentUser = users.find((u: any) => u.email === email);
+        const userData = await usersResponse.json();
         
-        if (currentUser && ['staff', 'admin', 'super_admin'].includes(currentUser.role)) {
+        if (userData.role === 'super_admin') {
+          // Super admin - redirect to super admin dashboard
+          router.push('/super-admin');
+        } else if (['staff', 'admin'].includes(userData.role)) {
           // Business user - redirect to business admin
           router.push('/business-admin');
         } else {
@@ -112,6 +114,15 @@ export default function LoginForm() {
           Back home
         </Link>
       </p>
+
+      <div className="mt-6 text-center">
+        <Link 
+          href="/super-admin/login" 
+          className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+        >
+          🔧 Super Admin Access
+        </Link>
+      </div>
     </div>
   );
 }
