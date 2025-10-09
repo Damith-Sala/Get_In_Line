@@ -23,6 +23,23 @@ export default function CreateQueuePage() {
         router.push('/login');
         return;
       }
+      
+      // Check if user is a business user
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const users = await response.json();
+        const currentUser = users.find((u: any) => u.id === user.id);
+        
+        if (!currentUser || !['staff', 'admin', 'super_admin'].includes(currentUser.role)) {
+          // Redirect regular users to queues page
+          setError('Only business accounts can create queues');
+          setTimeout(() => {
+            router.push('/queues');
+          }, 2000);
+          return;
+        }
+      }
+      
       setUser(user);
     }
     getUser();
