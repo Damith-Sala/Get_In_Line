@@ -85,47 +85,53 @@ export default function BusinessAdminPage() {
           return;
         }
 
-        // Get user's business
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('business_id')
-          .eq('id', user.id)
-          .single();
-
-        if (userError || !userData?.business_id) {
+        // Get user's business using API
+        const usersResponse = await fetch('/api/users');
+        if (!usersResponse.ok) {
+          setError('Failed to fetch user data');
+          return;
+        }
+        
+        const users = await usersResponse.json();
+        const userRecord = users.find((u: any) => u.id === user.id);
+        
+        if (!userRecord || !userRecord.businessId) {
           setError('No business associated with your account');
           return;
         }
 
-        const businessId = userData.business_id;
+        const businessId = userRecord.businessId;
 
-        // Fetch business details
-        const { data: businessData, error: businessError } = await supabase
-          .from('businesses')
-          .select('*')
-          .eq('id', businessId)
-          .single();
-
-        if (businessError) throw businessError;
+        // Fetch business details using API
+        const businessResponse = await fetch(`/api/businesses/${businessId}`);
+        if (!businessResponse.ok) {
+          setError('Failed to fetch business data');
+          return;
+        }
+        const businessData = await businessResponse.json();
         setBusiness(businessData);
 
-        // Fetch branches
-        const { data: branchesData, error: branchesError } = await supabase
-          .from('branches')
-          .select('*')
-          .eq('business_id', businessId);
+        // Fetch branches using API
+        const branchesResponse = await fetch(`/api/businesses/${businessId}/branches`);
+        if (branchesResponse.ok) {
+          const branchesData = await branchesResponse.json();
+          setBranches(branchesData || []);
+        } else {
+          setBranches([]);
+        }
 
-        if (branchesError) throw branchesError;
-        setBranches(branchesData || []);
-
-        // Fetch queues
-        const { data: queuesData, error: queuesError } = await supabase
-          .from('queues')
-          .select('*')
-          .eq('business_id', businessId);
-
-        if (queuesError) throw queuesError;
-        setQueues(queuesData || []);
+        // Fetch queues using API
+        const queuesResponse = await fetch('/api/queues');
+        if (queuesResponse.ok) {
+          const queuesData = await queuesResponse.json();
+          // Filter queues for this business
+          const businessQueues = queuesData.queues.filter((queue: any) => 
+            queue.businessId === businessId || queue.business_id === businessId
+          );
+          setQueues(businessQueues || []);
+        } else {
+          setQueues([]);
+        }
 
         // Fetch analytics
         try {
@@ -151,6 +157,29 @@ export default function BusinessAdminPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = '/login';
+  };
+
+  const handleDeleteQueue = async (queueId: string) => {
+    if (!confirm('Are you sure you want to delete this queue? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/queues?id=${queueId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete queue');
+      }
+
+      // Refresh the page to update the queue list
+      window.location.reload();
+    } catch (err: any) {
+      alert(`Failed to delete queue: ${err.message}`);
+    }
   };
 
   if (loading) {
@@ -301,6 +330,12 @@ export default function BusinessAdminPage() {
                           >
                             Manage
                           </Link>
+                          <button
+                            onClick={() => handleDeleteQueue(queue.id)}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                     </div>

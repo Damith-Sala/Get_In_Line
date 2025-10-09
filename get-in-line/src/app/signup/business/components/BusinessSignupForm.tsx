@@ -127,14 +127,12 @@ export default function BusinessSignupForm() {
 
       // Show success message and redirect
       if (data.user && data.session) {
+        // User is immediately logged in, redirect to business admin
         router.push('/business-admin');
         router.refresh();
       } else {
-        // Email confirmation sent
-        setError('Please check your email to confirm your account before logging in.');
-        setTimeout(() => {
-          router.push('/login');
-        }, 5000);
+        // Fallback - redirect to login
+        router.push('/login');
       }
     } catch (e: any) {
       setError(e.message);

@@ -39,16 +39,14 @@ export default function SignupForm() {
         throw new Error(data.error || 'Signup failed');
       }
 
-      // Show success message and instruct user to verify email
+      // Show success message and redirect
       if (data.user && data.session) {
+        // User is immediately logged in, redirect to dashboard
         router.push('/dashboard');
         router.refresh();
       } else {
-        // Email confirmation sent
-        setError('Please check your email to confirm your account before logging in.');
-        setTimeout(() => {
-          router.push('/login');
-        }, 5000);
+        // Fallback - redirect to login
+        router.push('/login');
       }
     } catch (e: any) {
       setError(e.message);

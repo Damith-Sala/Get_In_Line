@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       }
     );
 
-    // Create user in Supabase Auth
+    // Create user in Supabase Auth (without email confirmation)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,

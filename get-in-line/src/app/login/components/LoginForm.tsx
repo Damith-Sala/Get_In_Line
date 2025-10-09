@@ -37,7 +37,23 @@ export default function LoginForm() {
         throw new Error(data.error || 'Login failed');
       }
 
-      router.push('/dashboard');
+      // Check user role and redirect accordingly
+      const usersResponse = await fetch('/api/users');
+      if (usersResponse.ok) {
+        const users = await usersResponse.json();
+        const currentUser = users.find((u: any) => u.email === email);
+        
+        if (currentUser && ['staff', 'admin', 'super_admin'].includes(currentUser.role)) {
+          // Business user - redirect to business admin
+          router.push('/business-admin');
+        } else {
+          // Regular user - redirect to dashboard
+          router.push('/dashboard');
+        }
+      } else {
+        // Fallback to dashboard if we can't check role
+        router.push('/dashboard');
+      }
       router.refresh();
     } catch (e: any) {
       setError(e.message);

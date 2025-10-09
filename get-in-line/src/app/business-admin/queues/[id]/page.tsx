@@ -141,6 +141,37 @@ export default function QueueManagementPage() {
     }
   };
 
+  const handleDeleteQueue = async () => {
+    if (!queue) return;
+
+    if (!confirm('Are you sure you want to delete this queue? This action cannot be undone and will remove all queue entries.')) {
+      return;
+    }
+
+    try {
+      setActionLoading('delete');
+      setError(null);
+
+      const response = await fetch(`/api/queues?id=${queueId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete queue');
+      }
+
+      // Redirect back to business admin
+      window.location.href = '/business-admin';
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'waiting': return 'bg-yellow-100 text-yellow-800';
@@ -260,6 +291,13 @@ export default function QueueManagementPage() {
                   ? 'Updating...' 
                   : queue.is_active ? 'Close Queue' : 'Open Queue'
                 }
+              </button>
+              <button
+                onClick={() => handleDeleteQueue()}
+                disabled={actionLoading === 'delete'}
+                className="px-4 py-2 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+              >
+                {actionLoading === 'delete' ? 'Deleting...' : 'Delete Queue'}
               </button>
             </div>
           </div>
