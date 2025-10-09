@@ -59,8 +59,8 @@ export default function SignupForm() {
 
   return (
     <div className="w-full max-w-md bg-white/70 dark:bg-black/60 backdrop-blur rounded-lg shadow-md p-8">
-      <h1 className="text-2xl font-semibold mb-4">Create account</h1>
-      <p className="text-sm mb-6">Create an account to start checking in customers.</p>
+      <h1 className="text-2xl font-semibold mb-4">Create Customer Account</h1>
+      <p className="text-sm mb-6">Join queues and track your position in real-time.</p>
 
       {error && (
         <div className="bg-red-50 text-red-500 px-4 py-2 rounded mb-4 text-sm">
@@ -104,6 +104,13 @@ export default function SignupForm() {
         Already have an account?{' '}
         <Link href="/login" className="text-blue-600">
           Log in
+        </Link>
+      </p>
+
+      <p className="mt-2 text-sm">
+        Want to manage a business?{' '}
+        <Link href="/signup/business" className="text-blue-600">
+          Business signup
         </Link>
       </p>
 

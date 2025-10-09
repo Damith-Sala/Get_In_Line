@@ -8,6 +8,13 @@
       "when": 1759942988901,
       "tag": "0000_curvy_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1760016464641,
+      "tag": "0001_slow_champions",
+      "breakpoints": true
     }
   ]
 }

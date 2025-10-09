@@ -74,3 +74,37 @@ export const analyticsSchema = z.object({
   completedServices: z.number().default(0),
   cancelledServices: z.number().default(0),
 });
+
+// Business signup validation schemas
+export const businessSignupSchema = z.object({
+  // User info
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+  
+  // Registration type
+  registrationType: z.enum(['owner', 'staff']),
+  
+  // For business owners
+  businessData: z.object({
+    name: z.string().min(2),
+    description: z.string().optional(),
+    businessType: z.string().optional(),
+    subscriptionPlan: z.enum(['free', 'basic', 'premium']).default('free'),
+  }).optional(),
+  
+  // For staff members
+  businessId: z.string().optional(),
+}).refine((data) => {
+  // If owner, businessData is required
+  if (data.registrationType === 'owner') {
+    return data.businessData !== undefined;
+  }
+  // If staff, businessId is required
+  if (data.registrationType === 'staff') {
+    return data.businessId !== undefined && data.businessId.length > 0;
+  }
+  return true;
+}, {
+  message: "Business data required for owners, business ID required for staff"
+});
