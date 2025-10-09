@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import RealTimeQueue from '@/components/RealTimeQueue';
 
 interface Business {
   id: string;
@@ -394,6 +395,24 @@ export default function BusinessAdminPage() {
             </div>
           </div>
         </div>
+
+        {/* Real-time Queue Status */}
+        {queues.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-6">Live Queue Status</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {queues.map((queue) => (
+                <div key={queue.id}>
+                  <h3 className="text-lg font-semibold mb-2">{queue.name}</h3>
+                  <RealTimeQueue 
+                    queueId={queue.id} 
+                    userId={user?.id}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Additional Management Links */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">

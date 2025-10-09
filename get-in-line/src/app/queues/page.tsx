@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import RealTimeQueue from '@/components/RealTimeQueue';
 
 interface Queue {
   id: string;
@@ -334,6 +335,30 @@ export default function QueuesPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Real-time Queue Status for User's Queues */}
+        {user && queueEntries.filter(e => e.user_id === user.id && e.status === 'waiting').length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-6">Your Live Queue Status</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {queueEntries
+                .filter(e => e.user_id === user.id && e.status === 'waiting')
+                .map((entry) => {
+                  const queue = queues.find(q => q.id === entry.queue_id);
+                  return queue ? (
+                    <div key={entry.id}>
+                      <h3 className="text-lg font-semibold mb-2">{queue.name}</h3>
+                      <RealTimeQueue 
+                        queueId={entry.queue_id} 
+                        userId={user.id}
+                        userPosition={entry.position}
+                      />
+                    </div>
+                  ) : null;
+                })}
+            </div>
           </div>
         )}
 
