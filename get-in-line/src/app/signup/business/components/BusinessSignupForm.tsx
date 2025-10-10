@@ -3,6 +3,14 @@
 import { FormEvent, useState, useEffect } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface Business {
   id: string;
@@ -142,187 +150,198 @@ export default function BusinessSignupForm() {
   };
 
   return (
-    <div className="w-full max-w-2xl bg-white/70 dark:bg-black/60 backdrop-blur rounded-lg shadow-md p-8">
-      <h1 className="text-2xl font-semibold mb-2">Business Registration</h1>
-      <p className="text-sm mb-6 text-gray-600">
-        {step === 'userInfo' && 'Create your account to get started'}
-        {step === 'registrationType' && 'Choose how you want to use Get In Line'}
-        {step === 'businessDetails' && registrationType === 'owner' && 'Tell us about your business'}
-        {step === 'businessDetails' && registrationType === 'staff' && 'Find and join your business'}
-      </p>
-
-      {error && (
-        <div className="bg-red-50 text-red-500 px-4 py-2 rounded mb-4 text-sm">
-          {error}
-        </div>
-      )}
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle>Business Registration</CardTitle>
+        <CardDescription>
+          {step === 'userInfo' && 'Create your account to get started'}
+          {step === 'registrationType' && 'Choose how you want to use Get In Line'}
+          {step === 'businessDetails' && registrationType === 'owner' && 'Tell us about your business'}
+          {step === 'businessDetails' && registrationType === 'staff' && 'Find and join your business'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
       {/* Step 1: User Information */}
       {step === 'userInfo' && (
-        <form className="flex flex-col gap-3" onSubmit={handleUserInfoSubmit}>
-          <input 
-            className="border rounded px-3 py-2" 
-            placeholder="Full name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required 
-          />
-          <input 
-            className="border rounded px-3 py-2" 
-            placeholder="Email" 
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required 
-          />
-          <input 
-            className="border rounded px-3 py-2" 
-            placeholder="Password (minimum 8 characters)" 
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required 
-            minLength={8}
-          />
-          <button 
-            className="mt-2 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
-            type="submit"
+        <form className="space-y-4" onSubmit={handleUserInfoSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Enter your full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Create a password (minimum 8 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full"
           >
             Continue
-          </button>
+          </Button>
         </form>
       )}
 
       {/* Step 2: Registration Type Selection */}
       {step === 'registrationType' && (
-        <div>
-          <div className="space-y-3 mb-6">
-            <label 
-              className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                registrationType === 'owner' 
-                  ? 'border-blue-600 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <input 
-                type="radio" 
-                value="owner" 
-                checked={registrationType === 'owner'}
-                onChange={(e) => setRegistrationType(e.target.value as 'owner')}
-                className="mr-3 mt-1"
-              />
-              <div>
-                <div className="font-medium text-lg">Create a Business</div>
-                <div className="text-sm text-gray-600 mt-1">
+        <div className="space-y-6">
+          <RadioGroup value={registrationType} onValueChange={(value) => setRegistrationType(value as 'owner' | 'staff')}>
+            <div className="flex items-start space-x-3 p-4 border rounded-lg">
+              <RadioGroupItem value="owner" id="owner" className="mt-1" />
+              <div className="space-y-1">
+                <Label htmlFor="owner" className="text-lg font-medium cursor-pointer">
+                  Create a Business
+                </Label>
+                <p className="text-sm text-muted-foreground">
                   Start managing queues for your clinic, restaurant, bank, or service business
-                </div>
+                </p>
               </div>
-            </label>
+            </div>
             
-            <label 
-              className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                registrationType === 'staff' 
-                  ? 'border-blue-600 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <input 
-                type="radio" 
-                value="staff" 
-                checked={registrationType === 'staff'}
-                onChange={(e) => setRegistrationType(e.target.value as 'staff')}
-                className="mr-3 mt-1"
-              />
-              <div>
-                <div className="font-medium text-lg">Join Existing Business</div>
-                <div className="text-sm text-gray-600 mt-1">
+            <div className="flex items-start space-x-3 p-4 border rounded-lg">
+              <RadioGroupItem value="staff" id="staff" className="mt-1" />
+              <div className="space-y-1">
+                <Label htmlFor="staff" className="text-lg font-medium cursor-pointer">
+                  Join Existing Business
+                </Label>
+                <p className="text-sm text-muted-foreground">
                   Work as staff or manager for an existing business on the platform
-                </div>
+                </p>
               </div>
-            </label>
-          </div>
+            </div>
+          </RadioGroup>
 
           <div className="flex gap-3">
-            <button 
-              className="flex-1 bg-gray-300 text-gray-700 rounded px-4 py-2 hover:bg-gray-400"
+            <Button 
+              type="button"
+              variant="outline"
+              className="flex-1"
               onClick={() => setStep('userInfo')}
             >
               Back
-            </button>
-            <button 
-              className="flex-1 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
+            </Button>
+            <Button 
+              type="button"
+              className="flex-1"
               onClick={handleRegistrationTypeSubmit}
             >
               Continue
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Step 3a: Business Owner Details */}
       {step === 'businessDetails' && registrationType === 'owner' && (
-        <form className="flex flex-col gap-3" onSubmit={handleFinalSubmit}>
-          <input 
-            className="border rounded px-3 py-2" 
-            placeholder="Business name"
-            value={businessName}
-            onChange={(e) => setBusinessName(e.target.value)}
-            required 
-          />
-          <textarea 
-            className="border rounded px-3 py-2 min-h-[80px]" 
-            placeholder="Business description (optional)"
-            value={businessDescription}
-            onChange={(e) => setBusinessDescription(e.target.value)}
-          />
-          <select 
-            className="border rounded px-3 py-2"
-            value={businessType}
-            onChange={(e) => setBusinessType(e.target.value)}
-          >
-            <option value="">Select business type (optional)</option>
-            <option value="clinic">Medical Clinic</option>
-            <option value="hospital">Hospital</option>
-            <option value="restaurant">Restaurant</option>
-            <option value="bank">Bank</option>
-            <option value="government">Government Office</option>
-            <option value="retail">Retail Store</option>
-            <option value="salon">Salon/Spa</option>
-            <option value="other">Other</option>
-          </select>
-
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
-            <p className="text-sm text-blue-800">
-              <strong>Free Plan includes:</strong> Unlimited queues, basic analytics, and up to 5 staff members
-            </p>
+        <form className="space-y-4" onSubmit={handleFinalSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="businessName">Business Name</Label>
+            <Input
+              id="businessName"
+              placeholder="Enter business name"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="businessDescription">Business Description (Optional)</Label>
+            <Textarea
+              id="businessDescription"
+              placeholder="Describe your business..."
+              value={businessDescription}
+              onChange={(e) => setBusinessDescription(e.target.value)}
+              className="min-h-[80px]"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="businessType">Business Type (Optional)</Label>
+            <Select value={businessType} onValueChange={setBusinessType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select business type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="clinic">Medical Clinic</SelectItem>
+                <SelectItem value="hospital">Hospital</SelectItem>
+                <SelectItem value="restaurant">Restaurant</SelectItem>
+                <SelectItem value="bank">Bank</SelectItem>
+                <SelectItem value="government">Government Office</SelectItem>
+                <SelectItem value="retail">Retail Store</SelectItem>
+                <SelectItem value="salon">Salon/Spa</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex gap-3 mt-2">
-            <button 
+          <Alert>
+            <AlertDescription>
+              <strong>Free Plan includes:</strong> Unlimited queues, basic analytics, and up to 5 staff members
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex gap-3">
+            <Button 
               type="button"
-              className="flex-1 bg-gray-300 text-gray-700 rounded px-4 py-2 hover:bg-gray-400"
+              variant="outline"
+              className="flex-1"
               onClick={() => setStep('registrationType')}
             >
               Back
-            </button>
-            <button 
+            </Button>
+            <Button 
               type="submit"
-              className="flex-1 bg-green-600 text-white rounded px-4 py-2 hover:bg-green-700 disabled:opacity-50"
+              className="flex-1"
               disabled={loading}
             >
               {loading ? 'Creating account...' : 'Create Business Account'}
-            </button>
+            </Button>
           </div>
         </form>
       )}
 
       {/* Step 3b: Staff Member - Business Selection */}
       {step === 'businessDetails' && registrationType === 'staff' && (
-        <form className="flex flex-col gap-3" onSubmit={handleFinalSubmit}>
-          <div>
-            <label className="block text-sm font-medium mb-2">Search for your business</label>
-            <input 
-              className="border rounded px-3 py-2 w-full" 
+        <form className="space-y-4" onSubmit={handleFinalSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="businessSearch">Search for your business</Label>
+            <Input
+              id="businessSearch"
               placeholder="Type business name..."
               value={businessSearchQuery}
               onChange={(e) => setBusinessSearchQuery(e.target.value)}
@@ -334,13 +353,13 @@ export default function BusinessSignupForm() {
           {businessSearchQuery.length >= 2 && (
             <div className="border rounded max-h-60 overflow-y-auto">
               {isSearching && (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-4 text-center text-muted-foreground">
                   Searching...
                 </div>
               )}
               
               {!isSearching && searchResults.length === 0 && (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-4 text-center text-muted-foreground">
                   No businesses found. Try a different search term.
                 </div>
               )}
@@ -353,16 +372,16 @@ export default function BusinessSignupForm() {
                     setBusinessSearchQuery(business.name);
                     setSearchResults([]);
                   }}
-                  className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${
-                    selectedBusiness?.id === business.id ? 'bg-blue-50' : ''
+                  className={`p-3 border-b cursor-pointer hover:bg-muted/50 ${
+                    selectedBusiness?.id === business.id ? 'bg-primary/10' : ''
                   }`}
                 >
                   <div className="font-medium">{business.name}</div>
                   {business.businessType && (
-                    <div className="text-xs text-gray-500 capitalize">{business.businessType}</div>
+                    <div className="text-xs text-muted-foreground capitalize">{business.businessType}</div>
                   )}
                   {business.description && (
-                    <div className="text-sm text-gray-600 mt-1">{business.description}</div>
+                    <div className="text-sm text-muted-foreground mt-1">{business.description}</div>
                   )}
                 </div>
               ))}
@@ -371,60 +390,62 @@ export default function BusinessSignupForm() {
 
           {/* Selected Business */}
           {selectedBusiness && (
-            <div className="bg-green-50 border border-green-200 rounded p-3">
-              <p className="text-sm text-green-800">
+            <Alert>
+              <AlertDescription>
                 <strong>Selected:</strong> {selectedBusiness.name}
-              </p>
-            </div>
+              </AlertDescription>
+            </Alert>
           )}
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
-            <p className="text-sm text-yellow-800">
+          <Alert variant="default">
+            <AlertDescription>
               <strong>Note:</strong> Make sure you have been authorized by the business owner before registering as staff.
-            </p>
-          </div>
+            </AlertDescription>
+          </Alert>
 
-          <div className="flex gap-3 mt-2">
-            <button 
+          <div className="flex gap-3">
+            <Button 
               type="button"
-              className="flex-1 bg-gray-300 text-gray-700 rounded px-4 py-2 hover:bg-gray-400"
+              variant="outline"
+              className="flex-1"
               onClick={() => setStep('registrationType')}
             >
               Back
-            </button>
-            <button 
+            </Button>
+            <Button 
               type="submit"
-              className="flex-1 bg-green-600 text-white rounded px-4 py-2 hover:bg-green-700 disabled:opacity-50"
+              className="flex-1"
               disabled={loading || !selectedBusiness}
             >
               {loading ? 'Creating account...' : 'Join as Staff'}
-            </button>
+            </Button>
           </div>
         </form>
       )}
 
-      <div className="mt-6 pt-4 border-t">
-        <p className="text-sm">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline">
-            Log in
-          </Link>
-        </p>
+        <div className="mt-6 pt-4 border-t space-y-2 text-sm">
+          <p>
+            Already have an account?{' '}
+            <Link href="/login" className="text-primary hover:underline">
+              Log in
+            </Link>
+          </p>
 
-        <p className="mt-2 text-sm">
-          Want to join queues as a customer?{' '}
-          <Link href="/signup" className="text-blue-600 hover:underline">
-            Customer signup
-          </Link>
-        </p>
+          <p>
+            Want to join queues as a customer?{' '}
+            <Link href="/signup" className="text-primary hover:underline">
+              Customer signup
+            </Link>
+          </p>
 
-        <p className="mt-2 text-xs">
-          <Link href="/" className="text-gray-500 hover:underline">
-            Back home
-          </Link>
-        </p>
-      </div>
-    </div>
+          <p>
+            <Link href="/" className="text-muted-foreground hover:underline">
+              Back home
+            </Link>
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

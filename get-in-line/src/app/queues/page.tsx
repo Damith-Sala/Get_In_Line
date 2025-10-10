@@ -4,6 +4,13 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import RealTimeQueue from '@/components/RealTimeQueue';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import { Users, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react';
 
 interface Queue {
   id: string;
@@ -177,16 +184,27 @@ export default function QueuesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
+      <div className="min-h-screen p-8 bg-background">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Available Queues</h1>
+          <div className="flex justify-between items-center mb-6">
+            <Skeleton className="h-8 w-48" />
+            <div className="flex space-x-4">
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-24" />
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-              </div>
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -195,43 +213,49 @@ export default function QueuesPage() {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
+    <div className="min-h-screen p-8 bg-background">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Available Queues</h1>
-          <div className="space-x-4">
-            <Link 
-              href="/my-queues" 
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            >
-              My Queues
-            </Link>
-            <Link 
-              href="/dashboard" 
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Dashboard
-            </Link>
+          <div className="flex space-x-4">
+            <Button asChild variant="secondary">
+              <Link href="/my-queues">
+                <Users className="w-4 h-4 mr-2" />
+                My Queues
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/dashboard">
+                Dashboard
+              </Link>
+            </Button>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-600">{error}</p>
-          </div>
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         {queues.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <h2 className="text-xl font-semibold mb-4">No Queues Available</h2>
-            <p className="text-gray-600 mb-6">There are no queues available at the moment.</p>
-            <Link 
-              href="/queues/create" 
-              className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700"
-            >
-              Create the First Queue
-            </Link>
-          </div>
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-xl">No Queues Available</CardTitle>
+              <CardDescription>
+                There are no queues available at the moment.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild size="lg">
+                <Link href="/queues/create">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create the First Queue
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {queues.map((queue) => {
@@ -240,82 +264,85 @@ export default function QueuesPage() {
               const userPosition = getUserPosition(queue.id);
 
               return (
-                <div key={queue.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2">{queue.name}</h3>
+                <Card key={queue.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="text-xl">{queue.name}</CardTitle>
                     {queue.description && (
-                      <p className="text-gray-600 mb-4">{queue.description}</p>
+                      <CardDescription>{queue.description}</CardDescription>
                     )}
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Total in line:</span>
-                        <span className="font-medium">{stats.total}</span>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Total in line:</span>
+                        <Badge variant="secondary">{stats.total}</Badge>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Waiting:</span>
-                        <span className="font-medium text-yellow-600">{stats.waiting}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Waiting:</span>
+                        <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {stats.waiting}
+                        </Badge>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Being served:</span>
-                        <span className="font-medium text-blue-600">{stats.serving}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Being served:</span>
+                        <Badge variant="outline" className="text-blue-600 border-blue-600">
+                          {stats.serving}
+                        </Badge>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Completed:</span>
-                        <span className="font-medium text-green-600">{stats.served}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Completed:</span>
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          {stats.served}
+                        </Badge>
                       </div>
                       {queue.max_size && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Max capacity:</span>
-                          <span className="font-medium">{queue.max_size}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Max capacity:</span>
+                          <Badge variant="outline">{queue.max_size}</Badge>
                         </div>
                       )}
                     </div>
 
+                    <Separator />
+
                     {userInQueue ? (
                       <div className="space-y-3">
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <p className="text-green-800 text-sm">
-                            ✅ You're in this queue!
+                        <Alert>
+                          <CheckCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            You're in this queue!
                             {userPosition && (
-                              <span className="block mt-1">
-                                Your position: <strong>#{userPosition}</strong>
+                              <span className="block mt-1 font-semibold">
+                                Your position: #{userPosition}
                               </span>
                             )}
-                          </p>
-                        </div>
-                        <button
+                          </AlertDescription>
+                        </Alert>
+                        <Button
                           onClick={() => leaveQueue(queue.id)}
                           disabled={leavingQueue === queue.id}
-                          className={`w-full px-4 py-2 rounded text-center block ${
-                            leavingQueue === queue.id
-                              ? 'bg-gray-400 text-white cursor-not-allowed'
-                              : 'bg-red-600 text-white hover:bg-red-700'
-                          }`}
+                          variant="destructive"
+                          className="w-full"
                         >
                           {leavingQueue === queue.id ? 'Leaving...' : 'Leave Queue'}
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {!user ? (
-                          <Link 
-                            href="/login" 
-                            className="w-full bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-center block"
-                          >
-                            Login to Join
-                          </Link>
+                          <Button asChild variant="outline" className="w-full">
+                            <Link href="/login">
+                              Login to Join
+                            </Link>
+                          </Button>
                         ) : (
-                          <button
+                          <Button
                             onClick={() => joinQueue(queue.id)}
                             disabled={joiningQueue === queue.id || (queue.max_size ? stats.total >= queue.max_size : false)}
-                            className={`w-full px-4 py-2 rounded text-center block ${
-                              joiningQueue === queue.id
-                                ? 'bg-gray-400 text-white cursor-not-allowed'
-                                : (queue.max_size && stats.total >= queue.max_size)
-                                ? 'bg-red-400 text-white cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
+                            variant={queue.max_size && stats.total >= queue.max_size ? "destructive" : "default"}
+                            className="w-full"
                           >
                             {joiningQueue === queue.id
                               ? 'Joining...'
@@ -323,16 +350,16 @@ export default function QueuesPage() {
                               ? 'Queue Full'
                               : 'Join Queue'
                             }
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
 
-                    <div className="text-xs text-gray-500 mt-4">
+                    <div className="text-xs text-muted-foreground">
                       Created: {new Date(queue.created_at).toLocaleDateString()}
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
@@ -348,14 +375,18 @@ export default function QueuesPage() {
                 .map((entry) => {
                   const queue = queues.find(q => q.id === entry.queue_id);
                   return queue ? (
-                    <div key={entry.id}>
-                      <h3 className="text-lg font-semibold mb-2">{queue.name}</h3>
-                      <RealTimeQueue 
-                        queueId={entry.queue_id} 
-                        userId={user.id}
-                        userPosition={entry.position}
-                      />
-                    </div>
+                    <Card key={entry.id}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{queue.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <RealTimeQueue 
+                          queueId={entry.queue_id} 
+                          userId={user.id}
+                          userPosition={entry.position}
+                        />
+                      </CardContent>
+                    </Card>
                   ) : null;
                 })}
             </div>
@@ -363,33 +394,37 @@ export default function QueuesPage() {
         )}
 
         {/* Summary */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Queue Summary</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-blue-600">{queues.length}</div>
-              <div className="text-sm text-gray-600">Total Queues</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-yellow-600">
-                {queueEntries.filter(e => e.status === 'waiting').length}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Queue Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-primary">{queues.length}</div>
+                <div className="text-sm text-muted-foreground">Total Queues</div>
               </div>
-              <div className="text-sm text-gray-600">Waiting</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                {queueEntries.filter(e => e.status === 'serving').length}
+              <div>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {queueEntries.filter(e => e.status === 'waiting').length}
+                </div>
+                <div className="text-sm text-muted-foreground">Waiting</div>
               </div>
-              <div className="text-sm text-gray-600">Being Served</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600">
-                {queueEntries.filter(e => e.status === 'served').length}
+              <div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {queueEntries.filter(e => e.status === 'serving').length}
+                </div>
+                <div className="text-sm text-muted-foreground">Being Served</div>
               </div>
-              <div className="text-sm text-gray-600">Completed</div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {queueEntries.filter(e => e.status === 'served').length}
+                </div>
+                <div className="text-sm text-muted-foreground">Completed</div>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

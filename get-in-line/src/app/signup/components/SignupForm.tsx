@@ -4,6 +4,11 @@ import { FormEvent, useState } from 'react';
 import Link from "next/link";
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function SignupForm() {
   const [name, setName] = useState('');
@@ -56,67 +61,86 @@ export default function SignupForm() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white/70 dark:bg-black/60 backdrop-blur rounded-lg shadow-md p-8">
-      <h1 className="text-2xl font-semibold mb-4">Create Customer Account</h1>
-      <p className="text-sm mb-6">Join queues and track your position in real-time.</p>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Create Customer Account</CardTitle>
+        <CardDescription>Join queues and track your position in real-time.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {error && (
-        <div className="bg-red-50 text-red-500 px-4 py-2 rounded mb-4 text-sm">
-          {error}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Enter your full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading}
+          >
+            {loading ? 'Creating account...' : 'Sign up'}
+          </Button>
+        </form>
+
+        <div className="mt-6 space-y-2 text-sm">
+          <p>
+            Already have an account?{' '}
+            <Link href="/login" className="text-primary hover:underline">
+              Log in
+            </Link>
+          </p>
+          
+          <p>
+            Want to manage a business?{' '}
+            <Link href="/signup/business" className="text-primary hover:underline">
+              Business signup
+            </Link>
+          </p>
+          
+          <p>
+            <Link href="/" className="text-muted-foreground hover:underline">
+              Back home
+            </Link>
+          </p>
         </div>
-      )}
-
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <input 
-          className="border rounded px-3 py-2" 
-          placeholder="Full name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required 
-        />
-        <input 
-          className="border rounded px-3 py-2" 
-          placeholder="Email" 
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required 
-        />
-        <input 
-          className="border rounded px-3 py-2" 
-          placeholder="Password" 
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required 
-        />
-        <button 
-          className="mt-2 bg-green-600 text-white rounded px-4 py-2 disabled:opacity-50"
-          disabled={loading}
-        >
-          {loading ? 'Creating account...' : 'Sign up'}
-        </button>
-      </form>
-
-      <p className="mt-4 text-sm">
-        Already have an account?{' '}
-        <Link href="/login" className="text-blue-600">
-          Log in
-        </Link>
-      </p>
-
-      <p className="mt-2 text-sm">
-        Want to manage a business?{' '}
-        <Link href="/signup/business" className="text-blue-600">
-          Business signup
-        </Link>
-      </p>
-
-      <p className="mt-2 text-xs">
-        <Link href="/" className="text-gray-500">
-          Back home
-        </Link>
-      </p>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

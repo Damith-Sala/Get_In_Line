@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { businesses, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { hasBusinessAccess } from '@/lib/auth-helpers';
 
 export async function GET(
   request: Request,
@@ -39,17 +40,11 @@ export async function GET(
     }
 
     // Check if user has permission to view this business
-    const userRecord = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1);
-
-    if (userRecord.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    const hasAccess = await hasBusinessAccess(user.id, businessId);
+    
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
-
-    const userBusiness = userRecord[0];
     
     const business = await db
       .select()
@@ -59,18 +54,6 @@ export async function GET(
 
     if (business.length === 0) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
-
-    // Check authorization: user must be either:
-    // 1. The business owner, OR
-    // 2. A super admin, OR  
-    // 3. An admin with access to this business
-    const isOwner = business[0].ownerId === user.id;
-    const isSuperAdmin = userBusiness.role === 'super_admin';
-    const isAdminWithAccess = userBusiness.role === 'admin' && userBusiness.businessId === businessId;
-
-    if (!isOwner && !isSuperAdmin && !isAdminWithAccess) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     return NextResponse.json(business[0]);

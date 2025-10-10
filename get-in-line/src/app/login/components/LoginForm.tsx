@@ -4,6 +4,11 @@ import { FormEvent, useState } from 'react';
 import Link from "next/link";
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -65,64 +70,76 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white/70 dark:bg-black/60 backdrop-blur rounded-lg shadow-md p-8">
-      <h1 className="text-2xl font-semibold mb-4">Log in</h1>
-      <p className="text-sm mb-6">Sign in to view and manage your queues.</p>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Log in</CardTitle>
+        <CardDescription>Sign in to view and manage your queues.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {error && (
-        <div className="bg-red-50 text-red-500 px-4 py-2 rounded mb-4 text-sm">
-          {error}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </Button>
+        </form>
+
+        <div className="mt-6 space-y-2 text-sm">
+          <p>
+            Don't have an account?{' '}
+            <Link href="/signup" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </p>
+          
+          <p>
+            <Link href="/" className="text-muted-foreground hover:underline">
+              Back home
+            </Link>
+          </p>
         </div>
-      )}
 
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <input
-          aria-label="Email"
-          className="border rounded px-3 py-2"
-          placeholder="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          aria-label="Password"
-          className="border rounded px-3 py-2"
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button 
-          className="mt-2 bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-50"
-          disabled={loading}
-        >
-          {loading ? 'Signing in...' : 'Sign in'}
-        </button>
-      </form>
-
-      <p className="mt-4 text-sm">
-        Don't have an account?{' '}
-        <Link href="/signup" className="text-blue-600">
-          Sign up
-        </Link>
-      </p>
-
-      <p className="mt-2 text-xs">
-        <Link href="/" className="text-gray-500">
-          Back home
-        </Link>
-      </p>
-
-      <div className="mt-6 text-center">
-        <Link 
-          href="/super-admin/login" 
-          className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-        >
-          🔧 Super Admin Access
-        </Link>
-      </div>
-    </div>
+        <div className="mt-4 text-center">
+          <Link 
+            href="/super-admin/login" 
+            className="text-sm font-medium text-purple-600 hover:text-purple-800"
+          >
+            🔧 Super Admin Access
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

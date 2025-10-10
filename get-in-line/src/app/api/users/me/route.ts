@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { getUserBusinessId } from '@/lib/auth-helpers';
 
 export async function GET() {
   try {
@@ -44,10 +45,13 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
     }
 
+    // Get business ID from either users table or businessStaff table
+    const businessId = await getUserBusinessId(user.id);
+
     return NextResponse.json({
       user: userRecord[0],
       role: userRecord[0].role || 'user',
-      businessId: userRecord[0].businessId
+      businessId: businessId
     });
 
   } catch (error) {
