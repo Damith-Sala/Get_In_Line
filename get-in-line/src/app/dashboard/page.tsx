@@ -4,6 +4,33 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from "react";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { 
+  Users, 
+  Clock, 
+  Plus, 
+  BarChart3, 
+  Settings, 
+  LogOut, 
+  Home, 
+  List,
+  UserCheck,
+  TrendingUp
+} from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -62,93 +89,240 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen p-8 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <Card className="w-96">
+          <CardContent className="flex flex-col items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  const getUserInitials = (email: string) => {
+    return email?.split('@')[0]?.slice(0, 2).toUpperCase() || 'U';
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin': return 'default';
+      case 'staff': return 'secondary';
+      case 'super_admin': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
   return (
-    <div className="min-h-screen p-8">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-gray-600">Welcome, {user?.email}</p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <List className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold">Get In Line</h1>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <nav className="hidden md:flex items-center space-x-6">
+                <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <Home className="h-4 w-4 mr-2 inline" />
+                  Home
+                </Link>
+                <Link href="/queues" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <List className="h-4 w-4 mr-2 inline" />
+                  View Queues
+                </Link>
+                <Link href="/my-queues" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <UserCheck className="h-4 w-4 mr-2 inline" />
+                  My Queues
+                </Link>
+                {userRole !== 'user' && (
+                  <Link href="/business-admin" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                    <BarChart3 className="h-4 w-4 mr-2 inline" />
+                    Business Admin
+                  </Link>
+                )}
+              </nav>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="" alt={user?.email} />
+                      <AvatarFallback>{getUserInitials(user?.email)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.email}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        <Badge variant={getRoleBadgeVariant(userRole)} className="text-xs">
+                          {userRole.replace('_', ' ')}
+                        </Badge>
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/my-queues" className="cursor-pointer">
+                      <UserCheck className="mr-2 h-4 w-4" />
+                      <span>My Queues</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  {userRole !== 'user' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/business-admin" className="cursor-pointer">
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        <span>Business Admin</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
-        <nav className="flex gap-4 items-center">
-          <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">Home</Link>
-          <Link href="/queues" className="text-sm text-gray-600 hover:text-gray-900">View Queues</Link>
-          <Link href="/my-queues" className="text-sm text-gray-600 hover:text-gray-900">My Queues</Link>
-          {userRole !== 'user' && (
-            <Link href="/business-admin" className="text-sm text-blue-600 hover:text-blue-800 font-medium">Business Admin</Link>
-          )}
-          <button 
-            onClick={handleSignOut}
-            className="text-sm text-red-600 hover:text-red-800"
-          >
-            Sign out
-          </button>
-        </nav>
       </header>
 
-      <main>
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {userRole === 'user' ? (
-            // Customer Dashboard
-            <>
-              <div className="p-6 bg-white shadow-sm rounded-lg border">
-                <h2 className="text-lg font-medium mb-4">My Queue Entries</h2>
-                <div className="space-y-4">
-                  <p className="text-gray-600">You haven't joined any queues yet.</p>
-                  <Link 
-                    href="/queues" 
-                    className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Browse Available Queues
-                  </Link>
-                </div>
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8">
+        <div className="space-y-6">
+          {/* Welcome Section */}
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight">Welcome back!</h2>
+            <p className="text-muted-foreground">
+              Here's what's happening with your queues today.
+            </p>
+          </div>
+
+          {/* Dashboard Content */}
+          <Tabs defaultValue={userRole === 'user' ? 'customer' : 'business'} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="customer">Customer View</TabsTrigger>
+              <TabsTrigger value="business">Business View</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="customer" className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {/* My Queue Entries */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">My Queue Entries</CardTitle>
+                    <UserCheck className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">0</div>
+                    <p className="text-xs text-muted-foreground">
+                      You haven't joined any queues yet
+                    </p>
+                    <Button asChild className="mt-4 w-full">
+                      <Link href="/queues">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Browse Available Queues
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button asChild variant="outline" className="w-full justify-start">
+                      <Link href="/queues">
+                        <List className="mr-2 h-4 w-4" />
+                        View All Queues
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full justify-start">
+                      <Link href="/my-queues">
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        My Queue Entries
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Recent Activity */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-6">
+                      <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No recent activity</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-              
-              <div className="p-6 bg-white shadow-sm rounded-lg border">
-                <h2 className="text-lg font-medium mb-4">Quick Actions</h2>
-                <div className="space-y-3">
-                  <Link 
-                    href="/queues" 
-                    className="block px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                  >
-                    View All Queues
-                  </Link>
-                  <Link 
-                    href="/my-queues" 
-                    className="block px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                  >
-                    My Queue Entries
-                  </Link>
-                </div>
+            </TabsContent>
+
+            <TabsContent value="business" className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {/* Your Queues */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Your Queues</CardTitle>
+                    <List className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">0</div>
+                    <p className="text-xs text-muted-foreground">
+                      No queues created yet
+                    </p>
+                    <Button asChild className="mt-4 w-full">
+                      <Link href="/queues/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create New Queue
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Active Customers */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">0</div>
+                    <p className="text-xs text-muted-foreground">
+                      No active customers in queue
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Analytics */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Analytics</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-6">
+                      <BarChart3 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No data available</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </>
-          ) : (
-            // Business User Dashboard
-            <>
-              <div className="p-6 bg-white shadow-sm rounded-lg border">
-                <h2 className="text-lg font-medium mb-4">Your Queues</h2>
-                <div className="space-y-4">
-                  <p className="text-gray-600">No queues created yet.</p>
-                  <Link 
-                    href="/queues/create" 
-                    className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Create New Queue
-                  </Link>
-                </div>
-              </div>
-              
-              <div className="p-6 bg-white shadow-sm rounded-lg border">
-                <h2 className="text-lg font-medium mb-4">Active Customers</h2>
-                <p className="text-gray-600">No active customers in queue.</p>
-              </div>
-            </>
-          )}
-        </section>
+            </TabsContent>
+          </Tabs>
+        </div>
       </main>
     </div>
   );
