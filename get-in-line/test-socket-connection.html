@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket Connection Test</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Socket Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="logs"></div>
+
+    <script>
+        const socket = io('http://localhost:3000', {
+            path: '/socket.io/'
+        });
+
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+
+        function addLog(message) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            logsDiv.appendChild(logEntry);
+        }
+
+        socket.on('connect', () => {
+            statusDiv.textContent = '✅ Connected to Socket.IO server';
+            statusDiv.style.color = 'green';
+            addLog('Connected to server with ID: ' + socket.id);
+        });
+
+        socket.on('disconnect', () => {
+            statusDiv.textContent = '❌ Disconnected from Socket.IO server';
+            statusDiv.style.color = 'red';
+            addLog('Disconnected from server');
+        });
+
+        socket.on('connect_error', (error) => {
+            statusDiv.textContent = '❌ Connection Error: ' + error.message;
+            statusDiv.style.color = 'red';
+            addLog('Connection error: ' + error.message);
+        });
+
+        // Test joining a queue
+        socket.emit('join-queue', 'test-queue-123');
+        
+        socket.on('joined-queue', (data) => {
+            addLog('Joined queue: ' + JSON.stringify(data));
+        });
+    </script>
+</body>
+</html>

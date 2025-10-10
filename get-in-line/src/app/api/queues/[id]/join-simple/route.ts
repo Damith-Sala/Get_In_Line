@@ -11,6 +11,8 @@ export async function POST(
     const queueId = params.id;
     const { userId } = await request.json();
     
+    console.log('Join-simple request:', { queueId, userId });
+    
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
@@ -23,12 +25,12 @@ export async function POST(
       .limit(1);
 
     if (customUser.length === 0) {
-      // Create user in custom users table
+      // Create user in custom users table with unique email
       await db
         .insert(users)
         .values({
           id: userId,
-          email: 'user@example.com', // Placeholder
+          email: `user-${userId}@example.com`, // Unique email based on userId
           name: 'User',
           password: 'supabase_auth_user',
         });
@@ -76,7 +78,11 @@ export async function POST(
   } catch (error) {
     console.error('Join queue error:', error);
     return NextResponse.json(
-      { error: 'Failed to join queue' },
+      { 
+        error: 'Failed to join queue',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

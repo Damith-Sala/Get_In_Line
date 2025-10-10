@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { businesses } from '@/lib/drizzle/schema';
+import { businesses, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
@@ -10,6 +12,45 @@ export async function GET(
   try {
     const businessId = params.id;
     
+    // Get authenticated user
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options });
+          },
+          remove(name: string, options: any) {
+            cookieStore.delete({ name, ...options });
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    // Check if user has permission to view this business
+    const userRecord = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+
+    if (userRecord.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const userBusiness = userRecord[0];
+    
     const business = await db
       .select()
       .from(businesses)
@@ -18,6 +59,18 @@ export async function GET(
 
     if (business.length === 0) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
+    }
+
+    // Check authorization: user must be either:
+    // 1. The business owner, OR
+    // 2. A super admin, OR  
+    // 3. An admin with access to this business
+    const isOwner = business[0].ownerId === user.id;
+    const isSuperAdmin = userBusiness.role === 'super_admin';
+    const isAdminWithAccess = userBusiness.role === 'admin' && userBusiness.businessId === businessId;
+
+    if (!isOwner && !isSuperAdmin && !isAdminWithAccess) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     return NextResponse.json(business[0]);

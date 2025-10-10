@@ -45,11 +45,11 @@ export default function LoginForm() {
         if (userData.role === 'super_admin') {
           // Super admin - redirect to super admin dashboard
           router.push('/super-admin');
-        } else if (['staff', 'admin'].includes(userData.role)) {
-          // Business user - redirect to business admin
+        } else if (userData.role === 'staff') {
+          // Staff user - redirect to business admin
           router.push('/business-admin');
         } else {
-          // Regular user - redirect to dashboard
+          // All other users (including business owners with admin role) - redirect to dashboard
           router.push('/dashboard');
         }
       } else {

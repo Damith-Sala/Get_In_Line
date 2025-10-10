@@ -83,7 +83,15 @@ export async function POST(
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
     }
 
-    if (business[0].ownerId !== user.id && userBusiness.role !== 'admin') {
+    // Check authorization: user must be either:
+    // 1. The business owner, OR
+    // 2. A super admin, OR  
+    // 3. An admin with access to this business
+    const isOwner = business[0].ownerId === user.id;
+    const isSuperAdmin = userBusiness.role === 'super_admin';
+    const isAdminWithAccess = userBusiness.role === 'admin' && userBusiness.businessId === businessId;
+
+    if (!isOwner && !isSuperAdmin && !isAdminWithAccess) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
     
