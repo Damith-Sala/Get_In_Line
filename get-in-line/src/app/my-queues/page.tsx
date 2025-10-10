@@ -3,6 +3,32 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  ArrowLeft, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle, 
+  Users, 
+  List,
+  Home,
+  Plus,
+  Eye,
+  LogOut
+} from 'lucide-react';
 
 interface Queue {
   id: string;
@@ -119,31 +145,43 @@ export default function MyQueuesPage() {
     return queue ? queue.name : 'Unknown Queue';
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'waiting':
-        return 'bg-yellow-100 text-yellow-800';
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100"><Clock className="w-3 h-3 mr-1" />Waiting</Badge>;
       case 'serving':
-        return 'bg-blue-100 text-blue-800';
+        return <Badge variant="default" className="bg-blue-100 text-blue-800 hover:bg-blue-100"><Users className="w-3 h-3 mr-1" />Serving</Badge>;
       case 'served':
-        return 'bg-green-100 text-green-800';
+        return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100"><CheckCircle className="w-3 h-3 mr-1" />Served</Badge>;
       case 'missed':
-        return 'bg-red-100 text-red-800';
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Missed</Badge>;
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800';
+        return <Badge variant="outline"><AlertCircle className="w-3 h-3 mr-1" />Cancelled</Badge>;
       default:
-        return 'bg-gray-100 text-gray-800';
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">My Queues</h1>
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-6 py-8">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <div className="flex space-x-2">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
           </div>
         </div>
       </div>
@@ -152,14 +190,37 @@ export default function MyQueuesPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">My Queues</h1>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <p className="text-yellow-800">Please log in to view your queues.</p>
-            <Link href="/login" className="text-blue-600 hover:text-blue-800 mt-2 inline-block">
-              Go to Login
-            </Link>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-6 py-8">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboard">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Link>
+              </Button>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>My Queues</CardTitle>
+                <CardDescription>View and manage your queue entries</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Please log in to view your queues.
+                  </AlertDescription>
+                </Alert>
+                <Button asChild className="mt-4">
+                  <Link href="/login">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Go to Login
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -167,143 +228,190 @@ export default function MyQueuesPage() {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Queues</h1>
-          <div className="space-x-4">
-            <Link 
-              href="/queues" 
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Browse All Queues
-            </Link>
-            <Link 
-              href="/dashboard" 
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-            >
-              Dashboard
-            </Link>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-4">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/dashboard">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Dashboard
+                  </Link>
+                </Button>
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight">My Queues</h1>
+              <p className="text-muted-foreground">
+                View and manage your queue entries
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <Button asChild>
+                <Link href="/queues">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Browse All Queues
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/dashboard">
+                  <Home className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-600">{error}</p>
-          </div>
-        )}
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        {myEntries.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <h2 className="text-xl font-semibold mb-4">No Active Queues</h2>
-            <p className="text-gray-600 mb-6">You haven't joined any queues yet.</p>
-            <Link 
-              href="/queues" 
-              className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700"
-            >
-              Browse Available Queues
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {myEntries.map((entry) => (
-              <div key={entry.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold">{getQueueName(entry.queue_id)}</h3>
-                      <p className="text-gray-600">Queue ID: {entry.queue_id.slice(0, 8)}...</p>
+          {/* Empty State */}
+          {myEntries.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <List className="h-12 w-12 text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold mb-2">No Active Queues</h2>
+                <p className="text-muted-foreground mb-6 text-center max-w-md">
+                  You haven't joined any queues yet. Browse available queues to get started.
+                </p>
+                <Button asChild>
+                  <Link href="/queues">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Browse Available Queues
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Queue Entries */}
+              <div className="space-y-4">
+                {myEntries.map((entry) => (
+                  <Card key={entry.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-xl">{getQueueName(entry.queue_id)}</CardTitle>
+                          <CardDescription>
+                            Queue ID: {entry.queue_id.slice(0, 8)}...
+                          </CardDescription>
+                        </div>
+                        {getStatusBadge(entry.status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Queue Details Table */}
+                      <Table>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell className="font-medium">Position</TableCell>
+                            <TableCell>#{entry.position}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Joined</TableCell>
+                            <TableCell>{new Date(entry.entered_at).toLocaleString()}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Last Updated</TableCell>
+                            <TableCell>{new Date(entry.updated_at).toLocaleString()}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+
+                      {/* Status-specific content */}
+                      {entry.status === 'served' && entry.served_at && (
+                        <Alert>
+                          <CheckCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            Served at: {new Date(entry.served_at).toLocaleString()}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {entry.status === 'serving' && (
+                        <Alert>
+                          <Users className="h-4 w-4" />
+                          <AlertDescription>
+                            You're currently being served! Please wait for staff assistance.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {/* Action Buttons */}
+                      {entry.status === 'waiting' && (
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => leaveQueue(entry.queue_id)}
+                            disabled={leavingQueue === entry.queue_id}
+                          >
+                            {leavingQueue === entry.queue_id ? (
+                              <>
+                                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                Leaving...
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Leave Queue
+                              </>
+                            )}
+                          </Button>
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href="/queues">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Queue
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Summary Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Queue Summary</CardTitle>
+                  <CardDescription>Overview of your queue activity</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{myEntries.length}</div>
+                      <div className="text-sm text-muted-foreground">Total Entries</div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(entry.status)}`}>
-                      {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
-                    </span>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {myEntries.filter(e => e.status === 'waiting').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Waiting</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {myEntries.filter(e => e.status === 'serving').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Being Served</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {myEntries.filter(e => e.status === 'served').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Completed</div>
+                    </div>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <span className="text-sm text-gray-500">Position:</span>
-                      <p className="font-semibold">#{entry.position}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Joined:</span>
-                      <p className="font-semibold">{new Date(entry.entered_at).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Last Updated:</span>
-                      <p className="font-semibold">{new Date(entry.updated_at).toLocaleString()}</p>
-                    </div>
-                  </div>
-
-                  {entry.status === 'served' && entry.served_at && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                      <p className="text-green-800 text-sm">
-                        ✅ Served at: {new Date(entry.served_at).toLocaleString()}
-                      </p>
-                    </div>
-                  )}
-
-                  {entry.status === 'waiting' && (
-                    <div className="flex space-x-4">
-                      <button
-                        onClick={() => leaveQueue(entry.queue_id)}
-                        disabled={leavingQueue === entry.queue_id}
-                        className={`px-4 py-2 rounded text-sm font-medium ${
-                          leavingQueue === entry.queue_id
-                            ? 'bg-gray-400 text-white cursor-not-allowed'
-                            : 'bg-red-600 text-white hover:bg-red-700'
-                        }`}
-                      >
-                        {leavingQueue === entry.queue_id ? 'Leaving...' : 'Leave Queue'}
-                      </button>
-                      <Link
-                        href="/queues"
-                        className="px-4 py-2 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
-                      >
-                        View Queue
-                      </Link>
-                    </div>
-                  )}
-
-                  {entry.status === 'serving' && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-blue-800 text-sm">
-                        🎯 You're currently being served! Please wait for staff assistance.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Summary */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Queue Summary</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-blue-600">{myEntries.length}</div>
-              <div className="text-sm text-gray-600">Total Entries</div>
+                </CardContent>
+              </Card>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-yellow-600">
-                {myEntries.filter(e => e.status === 'waiting').length}
-              </div>
-              <div className="text-sm text-gray-600">Waiting</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                {myEntries.filter(e => e.status === 'serving').length}
-              </div>
-              <div className="text-sm text-gray-600">Being Served</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600">
-                {myEntries.filter(e => e.status === 'served').length}
-              </div>
-              <div className="text-sm text-gray-600">Completed</div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
