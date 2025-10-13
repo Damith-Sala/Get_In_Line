@@ -3,6 +3,11 @@
 import { FormEvent, useState } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function SuperAdminLogin() {
   const [email, setEmail] = useState('');
@@ -44,85 +49,84 @@ export default function SuperAdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-white">
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             🔧 Super Admin Access
-          </h2>
-          <p className="mt-2 text-sm text-gray-300">
+          </CardTitle>
+          <CardDescription>
             System Administration Portal
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-                Super Admin Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                placeholder="ketov50192@arqsis.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-                Super Admin Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                placeholder="Enter super admin password"
-              />
-            </div>
-          </div>
-
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
-          <div>
-            <button
-              type="submit"
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="email">Super Admin Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="ketov50192@arqsis.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Super Admin Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter super admin password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
             >
               {loading ? 'Authenticating...' : 'Access Super Admin'}
-            </button>
+            </Button>
+          </form>
+
+          <div className="mt-6 space-y-2 text-sm">
+            <p>
+              <Link href="/login" className="text-primary hover:underline">
+                ← Back to Regular Login
+              </Link>
+            </p>
+            
+            <p>
+              <Link href="/" className="text-muted-foreground hover:underline">
+                Back home
+              </Link>
+            </p>
           </div>
 
-          <div className="text-center">
-            <Link 
-              href="/login" 
-              className="text-purple-300 hover:text-white text-sm"
-            >
-              ← Back to Regular Login
-            </Link>
-          </div>
-        </form>
-
-        <div className="mt-8 bg-yellow-900/50 border border-yellow-500/50 rounded-lg p-4">
-          <h3 className="text-yellow-200 font-medium mb-2">🔐 Hardcoded Credentials</h3>
-          <p className="text-yellow-100 text-sm">
-            <strong>Email:</strong> ketov50192@arqsis.com<br/>
-            <strong>Password:</strong> damith2000
-          </p>
-        </div>
-      </div>
+          <Alert className="mt-4">
+            <AlertDescription>
+              <div className="space-y-1">
+                <div className="font-medium">🔐 Hardcoded Credentials</div>
+                <div className="text-sm">
+                  <strong>Email:</strong> ketov50192@arqsis.com<br/>
+                  <strong>Password:</strong> damith2000
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     </div>
   );
 }

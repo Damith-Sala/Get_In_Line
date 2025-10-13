@@ -3,6 +3,36 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { 
+  Users, 
+  Building2, 
+  BarChart3, 
+  Settings, 
+  LogOut, 
+  Home, 
+  Shield,
+  UserCheck,
+  TrendingUp,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
 
 interface SystemStats {
   totalUsers: number;
@@ -165,217 +195,382 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const getUserInitials = (email: string) => {
+    return email?.split('@')[0]?.slice(0, 2).toUpperCase() || 'SA';
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'super_admin': return 'destructive';
+      case 'admin': return 'default';
+      case 'staff': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <div className="text-gray-600">Loading super admin dashboard...</div>
-          </div>
-        </div>
+      <div className="min-h-screen p-8 flex items-center justify-center">
+        <Card className="w-96">
+          <CardContent className="flex flex-col items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground">Loading super admin dashboard...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-red-800 mb-2">Access Denied</h2>
-            <p className="text-red-600">{error}</p>
-            <Link href="/login" className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Back to Login
-            </Link>
-          </div>
-        </div>
+      <div className="min-h-screen p-8 flex items-center justify-center">
+        <Card className="w-96">
+          <CardContent className="flex flex-col items-center justify-center p-8">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-medium">Access Denied</p>
+                  <p className="text-sm">{error}</p>
+                  <Button asChild className="mt-4">
+                    <Link href="/login">Back to Login</Link>
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-8 bg-gradient-to-br from-purple-50 to-blue-50">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                🔧 Super Admin Dashboard
-              </h1>
-              <p className="text-gray-600 text-lg">
-                System Administration & Management
-              </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Shield className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold">Super Admin</h1>
+              </div>
             </div>
-            <div className="flex gap-4">
-              <Link 
-                href="/dashboard" 
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-              >
-                User Dashboard
-              </Link>
-              <button 
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-              >
-                Sign Out
-              </button>
+            
+            <div className="flex items-center space-x-4">
+              <nav className="hidden md:flex items-center space-x-6">
+                <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <Home className="h-4 w-4 mr-2 inline" />
+                  Home
+                </Link>
+                <Link href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <UserCheck className="h-4 w-4 mr-2 inline" />
+                  User Dashboard
+                </Link>
+              </nav>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="" alt={user?.email} />
+                      <AvatarFallback>{getUserInitials(user?.email)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.email}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        <Badge variant={getRoleBadgeVariant(user?.role)} className="text-xs">
+                          Super Admin
+                        </Badge>
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="cursor-pointer">
+                      <UserCheck className="mr-2 h-4 w-4" />
+                      <span>User Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* System Stats */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
-              <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
-              <p className="text-3xl font-bold text-blue-600">{stats.totalUsers}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-green-500">
-              <h3 className="text-sm font-medium text-gray-500">Total Businesses</h3>
-              <p className="text-3xl font-bold text-green-600">{stats.totalBusinesses}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-purple-500">
-              <h3 className="text-sm font-medium text-gray-500">Total Queues</h3>
-              <p className="text-3xl font-bold text-purple-600">{stats.totalQueues}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-orange-500">
-              <h3 className="text-sm font-medium text-gray-500">Active Queues</h3>
-              <p className="text-3xl font-bold text-orange-600">{stats.activeQueues}</p>
-            </div>
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8">
+        <div className="space-y-6">
+          {/* Welcome Section */}
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight">System Administration</h2>
+            <p className="text-muted-foreground">
+              Manage users, businesses, and monitor system performance.
+            </p>
           </div>
-        )}
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Users Management */}
-          <div className="bg-white rounded-lg shadow-lg">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-semibold">👥 User Management</h2>
+          {/* System Stats */}
+          {stats && (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Registered users in the system
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Businesses</CardTitle>
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalBusinesses}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Registered businesses
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Queues</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalQueues}</div>
+                  <p className="text-xs text-muted-foreground">
+                    All queues created
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Queues</CardTitle>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.activeQueues}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Currently active queues
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-            <div className="p-6">
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {users.map((user) => (
-                  <div key={user.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">{user.name}</h3>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                        <div className="flex gap-2 mt-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            user.role === 'super_admin' ? 'bg-purple-100 text-purple-800' :
-                            user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
-                            user.role === 'staff' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {user.role}
-                          </span>
-                          {user.businessId && (
-                            <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">
-                              Business User
-                            </span>
+          )}
+
+          {/* Management Tabs */}
+          <Tabs defaultValue="users" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="users">User Management</TabsTrigger>
+              <TabsTrigger value="businesses">Business Management</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="users" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    User Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage user accounts, roles, and permissions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {users.map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                                {user.role.replace('_', ' ')}
+                              </Badge>
+                              {user.businessId && (
+                                <Badge variant="outline" className="text-xs">
+                                  Business User
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {user.role !== 'super_admin' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleUserAction(user.id, 'suspend')}
+                                className="text-orange-600 hover:text-orange-800"
+                              >
+                                Suspend
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleUserAction(user.id, 'delete')}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                Delete
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        {user.role !== 'super_admin' && (
-                          <>
-                            <button
-                              onClick={() => handleUserAction(user.id, 'suspend')}
-                              className="text-orange-600 hover:text-orange-800 text-sm"
-                            >
-                              Suspend
-                            </button>
-                            <button
-                              onClick={() => handleUserAction(user.id, 'delete')}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Businesses Management */}
-          <div className="bg-white rounded-lg shadow-lg">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-semibold">🏢 Business Management</h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {businesses.map((business) => (
-                  <div key={business.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">{business.name}</h3>
-                        {business.businessType && (
-                          <p className="text-sm text-gray-500">{business.businessType}</p>
-                        )}
-                        <div className="flex gap-2 mt-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            business.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {business.isActive ? 'Active' : 'Inactive'}
-                          </span>
+            <TabsContent value="businesses" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Business Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage business accounts and their status
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {businesses.map((business) => (
+                      <div key={business.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{business.name?.slice(0, 2).toUpperCase() || 'B'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{business.name}</p>
+                            {business.businessType && (
+                              <p className="text-sm text-muted-foreground">{business.businessType}</p>
+                            )}
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant={business.isActive ? "default" : "secondary"} className="text-xs">
+                                {business.isActive ? (
+                                  <>
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Active
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Inactive
+                                  </>
+                                )}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleBusinessAction(business.id, business.isActive ? 'deactivate' : 'activate')}
+                            className={business.isActive ? "text-orange-600 hover:text-orange-800" : "text-green-600 hover:text-green-800"}
+                          >
+                            {business.isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleBusinessAction(business.id, 'delete')}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            Delete
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleBusinessAction(business.id, business.isActive ? 'deactivate' : 'activate')}
-                          className={`text-sm ${
-                            business.isActive ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'
-                          }`}
-                        >
-                          {business.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => handleBusinessAction(business.id, 'delete')}
-                          className="text-red-600 hover:text-red-800 text-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* System Actions */}
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  System Analytics
+                </CardTitle>
+                <CardDescription>View comprehensive system analytics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full">
+                  <Link href="/super-admin/analytics">
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    View Analytics
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  System Logs
+                </CardTitle>
+                <CardDescription>View system activity and error logs</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/super-admin/system-logs">
+                    <Activity className="mr-2 h-4 w-4" />
+                    View Logs
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  System Settings
+                </CardTitle>
+                <CardDescription>Configure system-wide settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/super-admin/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Configure
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
-
-        {/* System Actions */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link 
-            href="/super-admin/system-logs" 
-            className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
-          >
-            <h3 className="text-lg font-semibold mb-2">📊 System Logs</h3>
-            <p className="text-gray-600">View system activity and error logs</p>
-          </Link>
-          
-          <Link 
-            href="/super-admin/analytics" 
-            className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
-          >
-            <h3 className="text-lg font-semibold mb-2">📈 System Analytics</h3>
-            <p className="text-gray-600">View comprehensive system analytics</p>
-          </Link>
-          
-          <Link 
-            href="/super-admin/settings" 
-            className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
-          >
-            <h3 className="text-lg font-semibold mb-2">⚙️ System Settings</h3>
-            <p className="text-gray-600">Configure system-wide settings</p>
-          </Link>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
