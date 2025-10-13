@@ -22,8 +22,8 @@ export default function DebugSuperAdmin() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: 'superadmin@getinline.com',
-            password: 'SuperAdmin123!'
+            email: 'ketov50192@arqsis.com',
+            password: 'damith2000'
           })
         });
         
@@ -73,8 +73,8 @@ export default function DebugSuperAdmin() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'superadmin@getinline.com',
-          password: 'SuperAdmin123!'
+          email: 'ketov50192@arqsis.com',
+          password: 'damith2000'
         })
       });
 
@@ -203,8 +203,8 @@ export default function DebugSuperAdmin() {
             <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
               <h3 className="font-medium text-yellow-800 mb-2">🔐 Test Credentials</h3>
               <p className="text-sm text-yellow-700">
-                <strong>Email:</strong> superadmin@getinline.com<br/>
-                <strong>Password:</strong> SuperAdmin123!
+                <strong>Email:</strong> ketov50192@arqsis.com<br/>
+                <strong>Password:</strong> damith2000
               </p>
             </div>
           </div>

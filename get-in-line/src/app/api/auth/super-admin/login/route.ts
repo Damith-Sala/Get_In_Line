@@ -7,8 +7,8 @@ import { eq } from 'drizzle-orm';
 
 // Hardcoded super admin credentials
 const SUPER_ADMIN_CREDENTIALS = {
-  email: 'superadmin@getinline.com',
-  password: 'SuperAdmin123!',
+  email: 'ketov50192@arqsis.com',
+  password: 'damith2000',
   name: 'Super Administrator'
 };
 

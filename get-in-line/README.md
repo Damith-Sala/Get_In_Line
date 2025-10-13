@@ -18,6 +18,14 @@ A comprehensive queue management system built with Next.js, supporting both indi
 - View analytics and performance metrics
 - Send announcements and notifications
 
+### For Super Admins
+- Complete system administration and management
+- View system-wide statistics (users, businesses, queues)
+- Manage all users (suspend, delete, promote to admin)
+- Manage all businesses (activate/deactivate, delete)
+- Monitor system health and performance
+- Access to system logs and analytics (future features)
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
@@ -62,6 +70,7 @@ npm run dev
 5. **Open the application:**
    - User interface: http://localhost:3000
    - Business admin: http://localhost:3000/business-admin
+   - Super admin: http://localhost:3000/super-admin/login
 
 ## 📚 API Documentation
 
@@ -337,6 +346,35 @@ Get all users (admin only).
 
 #### POST `/api/sync-user`
 Sync user data with Supabase.
+
+## 🔧 Super Admin System
+
+### Access
+- **Login URL**: http://localhost:3000/super-admin/login
+- **Dashboard**: http://localhost:3000/super-admin
+- **Test Page**: http://localhost:3000/test-super-admin-fixed
+
+### Credentials (Development)
+- **Email**: `ketov50192@arqsis.com`
+- **Password**: `damith2000`
+
+### Features
+- **System Statistics**: View total users, businesses, queues, and active queues
+- **User Management**: Suspend, delete, or promote users to admin role
+- **Business Management**: Activate/deactivate or delete businesses
+- **System Monitoring**: Track system health and performance
+
+### API Endpoints
+- `POST /api/auth/super-admin/login` - Super admin authentication
+- `GET /api/super-admin/stats` - System statistics
+- `PATCH /api/super-admin/users/[id]` - User management actions
+- `PATCH /api/super-admin/businesses/[id]` - Business management actions
+
+### Security
+- **Custom session management** with `super-admin-session` cookie
+- **Independent of Supabase Auth** for development flexibility
+- **Protected routes** with middleware validation
+- **Cannot modify other super admin accounts**
 
 ## 🗄️ Database Schema
 

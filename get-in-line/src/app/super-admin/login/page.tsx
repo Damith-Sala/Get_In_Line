@@ -69,7 +69,7 @@ export default function SuperAdminLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                placeholder="superadmin@getinline.com"
+                placeholder="ketov50192@arqsis.com"
               />
             </div>
             <div>
@@ -118,8 +118,8 @@ export default function SuperAdminLogin() {
         <div className="mt-8 bg-yellow-900/50 border border-yellow-500/50 rounded-lg p-4">
           <h3 className="text-yellow-200 font-medium mb-2">🔐 Hardcoded Credentials</h3>
           <p className="text-yellow-100 text-sm">
-            <strong>Email:</strong> superadmin@getinline.com<br/>
-            <strong>Password:</strong> SuperAdmin123!
+            <strong>Email:</strong> ketov50192@arqsis.com<br/>
+            <strong>Password:</strong> damith2000
           </p>
         </div>
       </div>
