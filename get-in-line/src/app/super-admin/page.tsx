@@ -142,17 +142,26 @@ export default function SuperAdminDashboard() {
   };
 
   const handleSignOut = async () => {
-    // Clear super admin session cookie
-    document.cookie = 'super-admin-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    
-    // Also try to sign out from Supabase if there's a session
     try {
-      await supabase.auth.signOut();
+      // Call server-side logout API
+      await fetch('/api/auth/super-admin/logout', {
+        method: 'POST',
+      });
+      
+      // Also try to sign out from Supabase if there's a session
+      try {
+        await supabase.auth.signOut();
+      } catch (error) {
+        console.log('Supabase signout failed, but continuing with super admin signout');
+      }
+      
+      // Redirect to login
+      window.location.href = '/login';
     } catch (error) {
-      console.log('Supabase signout failed, but continuing with super admin signout');
+      console.error('Logout error:', error);
+      // Force redirect even if logout fails
+      window.location.href = '/login';
     }
-    
-    window.location.href = '/login';
   };
 
   const handleUserAction = async (userId: string, action: string) => {

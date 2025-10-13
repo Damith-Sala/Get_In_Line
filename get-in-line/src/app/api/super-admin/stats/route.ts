@@ -5,6 +5,26 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { eq, sql } from 'drizzle-orm';
 
+// Helper function to validate super admin sessions
+function validateSuperAdminSession(sessionData: any): boolean {
+  if (!sessionData || !sessionData.user || sessionData.user.role !== 'super_admin') {
+    return false;
+  }
+  
+  // Check if session is expired
+  if (sessionData.expires_in) {
+    const sessionTime = sessionData.access_token.split('_').pop();
+    const currentTime = Date.now();
+    const sessionAge = (currentTime - parseInt(sessionTime)) / 1000; // in seconds
+    
+    if (sessionAge > sessionData.expires_in) {
+      return false; // Session expired
+    }
+  }
+  
+  return true;
+}
+
 export async function GET() {
   try {
     // Verify super admin access
@@ -16,11 +36,11 @@ export async function GET() {
     if (superAdminSession) {
       try {
         const sessionData = JSON.parse(superAdminSession.value);
-        if (sessionData.user && sessionData.user.role === 'super_admin') {
-          // Super admin session found, proceed with stats
+        if (validateSuperAdminSession(sessionData)) {
+          // Super admin session found and valid, proceed with stats
           console.log('Super admin session verified via cookie');
         } else {
-          return NextResponse.json({ error: 'Invalid super admin session' }, { status: 401 });
+          return NextResponse.json({ error: 'Invalid or expired super admin session' }, { status: 401 });
         }
       } catch (error) {
         return NextResponse.json({ error: 'Invalid session format' }, { status: 401 });
