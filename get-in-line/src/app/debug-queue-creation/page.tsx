@@ -87,7 +87,7 @@ export default function DebugQueueCreationPage() {
       }
 
       // Test 3: Check role and business
-      const hasValidRole = ['staff', 'admin', 'super_admin'].includes(userRecord.role);
+      const hasValidRole = ['staff', 'business_admin', 'super_admin'].includes(userRecord.role);
       const hasBusiness = !!userRecord.businessId;
 
       setTestResult({

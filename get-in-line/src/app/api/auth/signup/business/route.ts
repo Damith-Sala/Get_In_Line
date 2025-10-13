@@ -66,26 +66,21 @@ export async function POST(request: Request) {
         );
       }
 
-      // Create user in custom database FIRST (with temporary null businessId)
-      await db.insert(users).values({
-        id: authData.user.id,
-        email: validatedData.email,
-        name: validatedData.name,
-        password: 'supabase_auth_user',
-        role: 'admin',
-        businessId: null,
-      });
-
-      // Create the business
+      // Create the business FIRST
       const newBusiness = await db.insert(businesses).values({
         ...validatedData.businessData,
         ownerId: authData.user.id,
       }).returning();
 
-      // Update user with business ID
-      await db.update(users)
-        .set({ businessId: newBusiness[0].id })
-        .where(eq(users.id, authData.user.id));
+      // Create user in custom database with business ID
+      await db.insert(users).values({
+        id: authData.user.id,
+        email: validatedData.email,
+        name: validatedData.name,
+        password: 'supabase_auth_user',
+        role: 'business_admin',
+        businessId: newBusiness[0].id,
+      });
 
       return NextResponse.json({
         message: 'Business owner account created successfully',

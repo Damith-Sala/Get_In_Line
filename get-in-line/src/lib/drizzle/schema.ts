@@ -6,7 +6,7 @@ export const users = pgTable('users', {
   email: text('email').unique().notNull(),
   name: text('name').notNull(),
   password: text('password').notNull(), // Hashed password
-  role: text('role').notNull().default('user'), // user, staff, admin, super_admin
+  role: text('role').notNull().default('user'), // user, staff, business_admin, super_admin
   businessId: uuid('business_id'), // For staff/admins - will be set as foreign key later
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -108,5 +108,59 @@ export const queueAnalytics = pgTable('queue_analytics', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-// Add foreign key relationship for users.businessId
-// Note: This would be handled in a migration, but for schema definition we keep it simple
+// Define foreign key relationships after all tables are defined
+// This is handled in migrations, but we can add the relationship here for clarity
+export const usersRelations = {
+  business: businesses,
+  ownedBusinesses: businesses,
+  createdQueues: queues,
+  queueEntries: queueEntries,
+  servedEntries: queueEntries,
+  staffMemberships: businessStaff,
+  notifications: notifications,
+};
+
+export const businessesRelations = {
+  owner: users,
+  staff: businessStaff,
+  branches: branches,
+  queues: queues,
+  notifications: notifications,
+  analytics: queueAnalytics,
+};
+
+export const branchesRelations = {
+  business: businesses,
+  manager: users,
+  queues: queues,
+};
+
+export const queuesRelations = {
+  business: businesses,
+  branch: branches,
+  creator: users,
+  entries: queueEntries,
+  analytics: queueAnalytics,
+};
+
+export const queueEntriesRelations = {
+  queue: queues,
+  user: users,
+  servedBy: users,
+};
+
+export const businessStaffRelations = {
+  business: businesses,
+  user: users,
+};
+
+export const notificationsRelations = {
+  business: businesses,
+  queue: queues,
+  user: users,
+};
+
+export const queueAnalyticsRelations = {
+  queue: queues,
+  business: businesses,
+};

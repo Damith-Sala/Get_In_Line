@@ -211,7 +211,7 @@ export default function SuperAdminDashboard() {
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'super_admin': return 'destructive';
-      case 'admin': return 'default';
+      case 'business_admin': return 'default';
       case 'staff': return 'secondary';
       default: return 'outline';
     }

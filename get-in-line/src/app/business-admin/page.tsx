@@ -9,10 +9,10 @@ interface Business {
   id: string;
   name: string;
   description: string | null;
-  business_type: string | null;
-  subscription_plan: string;
-  is_active: boolean;
-  created_at: string;
+  businessType: string | null;
+  subscriptionPlan: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 interface Branch {
@@ -21,17 +21,17 @@ interface Branch {
   address: string | null;
   phone: string | null;
   email: string | null;
-  is_active: boolean;
+  isActive: boolean;
 }
 
 interface Queue {
   id: string;
   name: string;
   description: string | null;
-  service_type: string | null;
-  max_size: number | null;
-  is_active: boolean;
-  estimated_wait_time: number | null;
+  serviceType: string | null;
+  maxSize: number | null;
+  isActive: boolean;
+  estimatedWaitTime: number | null;
 }
 
 interface Analytics {
@@ -72,10 +72,18 @@ export default function BusinessAdminPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     async function loadData() {
       try {
         setLoading(true);
         setError(null);
+
+        // Set a timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          setError('Loading is taking longer than expected. Please check your connection and try again.');
+          setLoading(false);
+        }, 30000); // 30 second timeout
 
         // Get current user
         const { data: { user } } = await supabase.auth.getUser();
@@ -89,11 +97,14 @@ export default function BusinessAdminPage() {
         // Get user's business using new efficient endpoint
         const usersResponse = await fetch('/api/users/me');
         if (!usersResponse.ok) {
+          const errorText = await usersResponse.text();
+          console.error('Failed to fetch user data:', usersResponse.status, errorText);
           setError('Failed to fetch user data');
           return;
         }
         
         const userData = await usersResponse.json();
+        console.log('User data:', userData);
         
         if (!userData.businessId) {
           setError('No business associated with your account');
@@ -105,10 +116,13 @@ export default function BusinessAdminPage() {
         // Fetch business details using API
         const businessResponse = await fetch(`/api/businesses/${businessId}`);
         if (!businessResponse.ok) {
+          const errorText = await businessResponse.text();
+          console.error('Failed to fetch business data:', businessResponse.status, errorText);
           setError('Failed to fetch business data');
           return;
         }
         const businessData = await businessResponse.json();
+        console.log('Business data:', businessData);
         setBusiness(businessData);
 
         // Fetch branches using API
@@ -124,12 +138,20 @@ export default function BusinessAdminPage() {
         const queuesResponse = await fetch('/api/queues');
         if (queuesResponse.ok) {
           const queuesData = await queuesResponse.json();
+          console.log('All queues data:', queuesData);
+          console.log('Looking for businessId:', businessId);
+          
           // Filter queues for this business
-          const businessQueues = queuesData.queues.filter((queue: any) => 
-            queue.businessId === businessId || queue.business_id === businessId
-          );
+          const businessQueues = queuesData.queues.filter((queue: any) => {
+            const matches = queue.businessId === businessId;
+            console.log(`Queue ${queue.id} (${queue.name}): businessId=${queue.businessId}, matches=${matches}`);
+            return matches;
+          });
+          
+          console.log('Filtered business queues:', businessQueues);
           setQueues(businessQueues || []);
         } else {
+          console.error('Failed to fetch queues:', queuesResponse.status, queuesResponse.statusText);
           setQueues([]);
         }
 
@@ -147,11 +169,19 @@ export default function BusinessAdminPage() {
       } catch (err: any) {
         setError(err.message);
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     }
 
     loadData();
+
+    // Cleanup function to clear timeout
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   const handleSignOut = async () => {
@@ -241,8 +271,8 @@ export default function BusinessAdminPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{business.name}</h1>
               <p className="text-gray-600 mt-1">
-                {business.business_type && `${business.business_type} • `}
-                {business.subscription_plan} plan
+                {business.businessType && `${business.businessType} • `}
+                {business.subscriptionPlan} plan
               </p>
               {business.description && (
                 <p className="text-gray-500 mt-2">{business.description}</p>
@@ -264,6 +294,42 @@ export default function BusinessAdminPage() {
             </div>
           </div>
         </header>
+
+        {/* Quick Navigation */}
+        <div className="mb-8">
+          <div className="bg-white rounded-lg shadow p-4">
+            <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+            <div className="flex flex-wrap gap-3">
+              <Link 
+                href="/queues/create" 
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create Queue
+              </Link>
+              <Link 
+                href="/business-admin/staff" 
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                Manage Staff
+              </Link>
+              <Link 
+                href="/business-admin/branches/create" 
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Add Branch
+              </Link>
+            </div>
+          </div>
+        </div>
 
         {/* Quick Stats */}
         {analytics && (
@@ -312,20 +378,20 @@ export default function BusinessAdminPage() {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="font-medium">{queue.name}</h3>
-                          {queue.service_type && (
-                            <p className="text-sm text-gray-500">{queue.service_type}</p>
+                          {queue.serviceType && (
+                            <p className="text-sm text-gray-500">{queue.serviceType}</p>
                           )}
                           <div className="flex gap-4 mt-2 text-sm">
                             <span className={`px-2 py-1 rounded ${
-                              queue.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              queue.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
-                              {queue.is_active ? 'Active' : 'Inactive'}
+                              {queue.isActive ? 'Active' : 'Inactive'}
                             </span>
-                            {queue.max_size && (
-                              <span className="text-gray-500">Max: {queue.max_size}</span>
+                            {queue.maxSize && (
+                              <span className="text-gray-500">Max: {queue.maxSize}</span>
                             )}
-                            {queue.estimated_wait_time && (
-                              <span className="text-gray-500">~{queue.estimated_wait_time} min wait</span>
+                            {queue.estimatedWaitTime && (
+                              <span className="text-gray-500">~{queue.estimatedWaitTime} min wait</span>
                             )}
                           </div>
                         </div>
@@ -381,9 +447,9 @@ export default function BusinessAdminPage() {
                             <p className="text-sm text-gray-500">{branch.phone}</p>
                           )}
                           <span className={`inline-block mt-2 px-2 py-1 rounded text-sm ${
-                            branch.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            branch.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {branch.is_active ? 'Active' : 'Inactive'}
+                            {branch.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                         <Link 
@@ -423,10 +489,20 @@ export default function BusinessAdminPage() {
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link 
             href="/business-admin/staff" 
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-500"
           >
-            <h3 className="text-lg font-semibold mb-2">Staff Management</h3>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold">Staff Management</h3>
+            </div>
             <p className="text-gray-600">Manage staff accounts and permissions</p>
+            <div className="mt-3 text-sm text-blue-600 font-medium">
+              Control who can create queues, view analytics, and manage operations
+            </div>
           </Link>
           
           <Link 

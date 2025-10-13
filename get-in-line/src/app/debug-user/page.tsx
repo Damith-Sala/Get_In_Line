@@ -64,8 +64,8 @@ export default function DebugUserPage() {
         } else {
           // Check role
           const role = userRecord.role;
-          if (!['staff', 'admin', 'super_admin'].includes(role)) {
-            issues.push(`Invalid role: ${role}. Need: staff, admin, or super_admin`);
+          if (!['staff', 'business_admin', 'super_admin'].includes(role)) {
+            issues.push(`Invalid role: ${role}. Need: staff, business_admin, or super_admin`);
             recommendations.push('Sign up as a business user or contact your business admin to get proper permissions');
           }
 
@@ -76,7 +76,7 @@ export default function DebugUserPage() {
           }
 
           // Determine if can create queues
-          const canCreateQueues = ['staff', 'admin', 'super_admin'].includes(role) && userRecord.businessId;
+          const canCreateQueues = ['staff', 'business_admin', 'super_admin'].includes(role) && userRecord.businessId;
           
           setStatus({
             isAuthenticated: true,

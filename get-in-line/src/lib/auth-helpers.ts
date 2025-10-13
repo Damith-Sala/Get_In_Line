@@ -47,12 +47,12 @@ export async function hasBusinessAccess(userId: string, businessId: string): Pro
     }
 
     // Check 3: User is an admin with direct business access
-    if (user.role === 'admin' && (user.businessId === businessId || user.business_id === businessId)) {
+    if (user.role === 'business_admin' && user.businessId === businessId) {
       return true;
     }
 
     // Check 4: User is staff with direct business access
-    if (user.role === 'staff' && (user.businessId === businessId || user.business_id === businessId)) {
+    if (user.role === 'staff' && user.businessId === businessId) {
       return true;
     }
 
@@ -94,8 +94,8 @@ export async function getUserBusinessId(userId: string): Promise<string | null> 
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (userRecord.length > 0 && (userRecord[0].businessId || userRecord[0].business_id)) {
-      return userRecord[0].businessId || userRecord[0].business_id;
+    if (userRecord.length > 0 && userRecord[0].businessId) {
+      return userRecord[0].businessId;
     }
 
     // If not found in users table, check businessStaff table

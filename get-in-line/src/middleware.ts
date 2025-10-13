@@ -59,14 +59,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // If user is signed in with valid session and the current path is /login or /signup, redirect to /dashboard
-  if (isSessionValid && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
+  // Note: Removed hardcoded dashboard redirect to allow LoginForm to handle role-based routing
+  // The LoginForm component now handles proper redirection based on user roles
 
   return response
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/business-admin/:path*', '/super-admin/:path*', '/login', '/signup']
+  matcher: ['/dashboard/:path*', '/business-admin/:path*', '/staff-dashboard/:path*', '/super-admin/:path*', '/login', '/signup']
 }

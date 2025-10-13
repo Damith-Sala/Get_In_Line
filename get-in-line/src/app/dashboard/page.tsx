@@ -105,7 +105,7 @@ export default function DashboardPage() {
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case 'admin': return 'default';
+      case 'business_admin': return 'default';
       case 'staff': return 'secondary';
       case 'super_admin': return 'destructive';
       default: return 'outline';
@@ -174,7 +174,15 @@ export default function DashboardPage() {
                       <span>My Queues</span>
                     </Link>
                   </DropdownMenuItem>
-                  {userRole !== 'user' && (
+                  {userRole === 'staff' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/staff-dashboard" className="cursor-pointer">
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        <span>Staff Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {userRole === 'business_admin' && (
                     <DropdownMenuItem asChild>
                       <Link href="/business-admin" className="cursor-pointer">
                         <BarChart3 className="mr-2 h-4 w-4" />

@@ -30,7 +30,7 @@ export default function CreateQueuePage() {
         const users = await response.json();
         const currentUser = users.find((u: any) => u.id === user.id);
         
-        if (!currentUser || !['staff', 'admin', 'super_admin'].includes(currentUser.role)) {
+        if (!currentUser || !['staff', 'business_admin', 'super_admin'].includes(currentUser.role)) {
           // Redirect regular users to queues page
           setError('Only business accounts can create queues');
           setTimeout(() => {

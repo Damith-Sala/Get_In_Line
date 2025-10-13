@@ -87,7 +87,7 @@ export async function PATCH(
       case 'promote':
         await db
           .update(users)
-          .set({ role: 'admin' })
+          .set({ role: 'business_admin' })
           .where(eq(users.id, userId));
         break;
 

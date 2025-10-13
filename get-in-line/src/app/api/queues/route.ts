@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { queues, users, businesses } from '@/lib/drizzle/schema';
 import { queueSchema } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
+import { hasPermission } from '@/lib/permission-helpers';
 
 export async function GET() {
   try {
@@ -22,6 +23,7 @@ export async function GET() {
           estimated_wait_time: queues.estimatedWaitTime,
           is_active: queues.isActive,
           created_at: queues.createdAt,
+          businessId: queues.businessId,
           business_name: businesses.name,
           business_type: businesses.businessType,
         })
@@ -39,6 +41,7 @@ export async function GET() {
           estimated_wait_time: queues.estimatedWaitTime,
           is_active: queues.isActive,
           created_at: queues.createdAt,
+          businessId: queues.businessId,
         })
         .from(queues);
       
@@ -107,7 +110,7 @@ export async function POST(request: Request) {
     const userBusinessId = userRecord[0].businessId;
 
     // Only allow business users (staff, admin, super_admin) to create queues
-    if (!['staff', 'admin', 'super_admin'].includes(userRole)) {
+    if (!['staff', 'business_admin', 'super_admin'].includes(userRole)) {
       return NextResponse.json({ 
         error: 'Only business accounts can create queues' 
       }, { status: 403 });
@@ -118,6 +121,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ 
         error: 'User must be associated with a business to create queues' 
       }, { status: 403 });
+    }
+
+    // Check if user has permission to create queues (for staff members)
+    if (userRole === 'staff') {
+      const canCreate = await hasPermission(user.id, userBusinessId, 'canCreateQueues');
+      if (!canCreate) {
+        return NextResponse.json({ 
+          error: 'You do not have permission to create queues. Contact your business admin.' 
+        }, { status: 403 });
+      }
     }
     
     // Create queue with business association
@@ -189,7 +202,7 @@ export async function DELETE(request: Request) {
     const userBusinessId = userRecord[0].businessId;
 
     // Only allow business users (staff, admin, super_admin) to delete queues
-    if (!['staff', 'admin', 'super_admin'].includes(userRole)) {
+    if (!['staff', 'business_admin', 'super_admin'].includes(userRole)) {
       return NextResponse.json({ 
         error: 'Only business accounts can delete queues' 
       }, { status: 403 });
@@ -200,6 +213,16 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ 
         error: 'User must be associated with a business to delete queues' 
       }, { status: 403 });
+    }
+
+    // Check if user has permission to delete queues (for staff members)
+    if (userRole === 'staff') {
+      const canDelete = await hasPermission(user.id, userBusinessId, 'canDeleteQueues');
+      if (!canDelete) {
+        return NextResponse.json({ 
+          error: 'You do not have permission to delete queues. Contact your business admin.' 
+        }, { status: 403 });
+      }
     }
 
     // Check if queue exists and belongs to user's business

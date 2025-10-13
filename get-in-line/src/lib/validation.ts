@@ -5,7 +5,7 @@ export const userSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().min(2),
-  role: z.enum(['user', 'staff', 'admin', 'super_admin']).default('user'),
+  role: z.enum(['user', 'staff', 'business_admin', 'super_admin']).default('user'),
 });
 
 // Business validation schemas
@@ -49,7 +49,7 @@ export const queueEntrySchema = z.object({
 // Staff management validation schemas
 export const staffSchema = z.object({
   userId: z.string(),
-  role: z.enum(['staff', 'manager', 'admin']),
+  role: z.enum(['staff', 'manager', 'business_admin']),
   permissions: z.string().optional(), // JSON string
 });
 

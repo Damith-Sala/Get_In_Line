@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     // Update user role to admin
     await db
       .update(users)
-      .set({ role: 'admin', businessId: newBusiness[0].id })
+      .set({ role: 'business_admin', businessId: newBusiness[0].id })
       .where(eq(users.id, user.id));
 
     return NextResponse.json(newBusiness[0], { status: 201 });

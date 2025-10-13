@@ -96,7 +96,7 @@ export async function POST(
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
     }
 
-    if (business[0].ownerId !== user.id && userBusiness.role !== 'admin') {
+    if (business[0].ownerId !== user.id && userBusiness.role !== 'business_admin') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
