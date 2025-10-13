@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import QueueManagement from '@/components/QueueManagement';
 import { 
   Users, 
   Clock, 
@@ -17,7 +19,9 @@ import {
   AlertCircle,
   BarChart3,
   Settings,
-  LogOut
+  LogOut,
+  Plus,
+  List
 } from 'lucide-react';
 
 interface Business {
@@ -65,6 +69,12 @@ export default function StaffDashboard() {
     customersServed: 0,
     activeQueues: 0,
     totalWaiting: 0
+  });
+  const [userPermissions, setUserPermissions] = useState({
+    canCreateQueues: false,
+    canEditQueues: false,
+    canDeleteQueues: false,
+    canManageQueueOperations: true,
   });
 
   const router = useRouter();
@@ -128,6 +138,29 @@ export default function StaffDashboard() {
             customersServed: statsData.summary?.completedServices || 0,
             totalWaiting: statsData.summary?.totalEntries || 0
           }));
+        }
+
+        // Load user permissions
+        const permissionsResponse = await fetch(`/api/users/me`);
+        if (permissionsResponse.ok) {
+          const userData = await permissionsResponse.json();
+          if (userData.role === 'business_admin' || userData.role === 'super_admin') {
+            setUserPermissions({
+              canCreateQueues: true,
+              canEditQueues: true,
+              canDeleteQueues: true,
+              canManageQueueOperations: true,
+            });
+          } else if (userData.role === 'staff') {
+            // For staff, we would need to check their specific permissions
+            // For now, we'll set basic permissions
+            setUserPermissions({
+              canCreateQueues: false,
+              canEditQueues: false,
+              canDeleteQueues: false,
+              canManageQueueOperations: true,
+            });
+          }
         }
 
       } catch (error) {
@@ -321,168 +354,209 @@ export default function StaffDashboard() {
           </Card>
         </div>
 
-        {/* Active Queues */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-6">Active Queues</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {queues.filter(queue => queue.is_active).map((queue) => (
-              <Card key={queue.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleQueueSelect(queue)}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{queue.name}</CardTitle>
-                      <CardDescription>{queue.description}</CardDescription>
-                    </div>
-                    <Badge variant="default" className="bg-green-100 text-green-800">
-                      Active
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Waiting:</span>
-                      <span className="font-medium">{queue.total_waiting || 0}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Est. Wait:</span>
-                      <span className="font-medium">{queue.estimated_wait_time || 0} min</span>
-                    </div>
-                    <div className="pt-2">
-                      <Button 
-                        size="sm" 
-                        className="w-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQueueSelect(queue);
-                        }}
-                      >
-                        Manage Queue
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          {queues.filter(queue => queue.is_active).length === 0 && (
-            <Card>
-              <CardContent className="text-center py-8">
-                <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Queues</h3>
-                <p className="text-gray-600">There are no active queues at the moment.</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* Main Content with Tabs */}
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="queues" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Queue Management
+            </TabsTrigger>
+            <TabsTrigger value="operations" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Operations
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Queue Management Panel */}
-        {selectedQueue && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-6">Queue Management: {selectedQueue.name}</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Queue Controls */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Queue Controls</CardTitle>
-                  <CardDescription>Manage this queue</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button 
-                      onClick={() => handleQueueAction(selectedQueue.id, 'next')}
-                      className="flex items-center gap-2"
-                    >
-                      <Users className="h-4 w-4" />
-                      Call Next
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleQueueAction(selectedQueue.id, 'close')}
-                      className="flex items-center gap-2"
-                    >
-                      <Pause className="h-4 w-4" />
-                      Close Queue
-                    </Button>
-                  </div>
-                  
-                  <div className="pt-4 border-t">
-                    <h4 className="font-medium mb-3">Quick Actions</h4>
-                    <div className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full justify-start"
-                        onClick={() => handleQueueAction(selectedQueue.id, 'open')}
-                      >
-                        <Play className="h-4 w-4 mr-2" />
-                        Open Queue
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full justify-start"
-                        onClick={() => {
-                          const name = prompt('Enter walk-in customer name:');
-                          if (name) {
-                            // For walk-in, we'll need to create a temporary user or use a special flow
-                            handleQueueAction(selectedQueue.id, 'walkin');
-                          }
-                        }}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Add Walk-in
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Active Queues Overview */}
+            <div>
+              <h2 className="text-2xl font-bold mb-6">Active Queues</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {queues.filter(queue => queue.is_active).map((queue) => (
+                  <Card key={queue.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleQueueSelect(queue)}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{queue.name}</CardTitle>
+                          <CardDescription>{queue.description}</CardDescription>
+                        </div>
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          Active
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Waiting:</span>
+                          <span className="font-medium">{queue.total_waiting || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Est. Wait:</span>
+                          <span className="font-medium">{queue.estimated_wait_time || 0} min</span>
+                        </div>
+                        <div className="pt-2">
+                          <Button 
+                            size="sm" 
+                            className="w-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQueueSelect(queue);
+                            }}
+                          >
+                            Manage Queue
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              
+              {queues.filter(queue => queue.is_active).length === 0 && (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Queues</h3>
+                    <p className="text-gray-600">There are no active queues at the moment.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
 
-              {/* Current Queue Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Current Status</CardTitle>
-                  <CardDescription>People waiting in line</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {queueEntries.length > 0 ? (
-                    <div className="space-y-3">
-                      {queueEntries.slice(0, 5).map((entry) => (
-                        <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-sm font-medium">
-                              {entry.position}
-                            </div>
-                            <div>
-                              <p className="font-medium">{entry.user.name}</p>
-                              <p className="text-sm text-gray-600">
-                                {entry.is_walk_in ? 'Walk-in' : 'Registered'}
-                              </p>
+          <TabsContent value="queues" className="space-y-6">
+            <QueueManagement
+              businessId={business?.id || ''}
+              queues={queues}
+              onQueuesChange={setQueues}
+              onQueueSelect={handleQueueSelect}
+              userPermissions={userPermissions}
+            />
+          </TabsContent>
+
+          <TabsContent value="operations" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-6">Queue Operations</h2>
+              <p className="text-gray-600 mb-6">Manage active queue operations and customer flow.</p>
+              
+              {selectedQueue ? (
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Currently Managing: {selectedQueue.name}</CardTitle>
+                      <CardDescription>Real-time queue operations</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Queue Controls */}
+                        <div className="space-y-4">
+                          <h4 className="font-medium">Queue Controls</h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Button 
+                              onClick={() => handleQueueAction(selectedQueue.id, 'next')}
+                              className="flex items-center gap-2"
+                            >
+                              <Users className="h-4 w-4" />
+                              Call Next
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => handleQueueAction(selectedQueue.id, 'close')}
+                              className="flex items-center gap-2"
+                            >
+                              <Pause className="h-4 w-4" />
+                              Close Queue
+                            </Button>
+                          </div>
+                          
+                          <div className="pt-4 border-t">
+                            <h4 className="font-medium mb-3">Quick Actions</h4>
+                            <div className="space-y-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full justify-start"
+                                onClick={() => handleQueueAction(selectedQueue.id, 'open')}
+                              >
+                                <Play className="h-4 w-4 mr-2" />
+                                Open Queue
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full justify-start"
+                                onClick={() => {
+                                  const name = prompt('Enter walk-in customer name:');
+                                  if (name) {
+                                    handleQueueAction(selectedQueue.id, 'walkin');
+                                  }
+                                }}
+                              >
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Add Walk-in
+                              </Button>
                             </div>
                           </div>
-                          <Badge variant={entry.status === 'serving' ? 'default' : 'secondary'}>
-                            {entry.status}
-                          </Badge>
                         </div>
-                      ))}
-                      {queueEntries.length > 5 && (
-                        <p className="text-sm text-gray-600 text-center">
-                          +{queueEntries.length - 5} more waiting
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">No one waiting in this queue</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+
+                        {/* Current Queue Status */}
+                        <div className="space-y-4">
+                          <h4 className="font-medium">Current Status</h4>
+                          {queueEntries.length > 0 ? (
+                            <div className="space-y-3">
+                              {queueEntries.slice(0, 5).map((entry) => (
+                                <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-sm font-medium">
+                                      {entry.position}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">{entry.user.name}</p>
+                                      <p className="text-sm text-gray-600">
+                                        {entry.is_walk_in ? 'Walk-in' : 'Registered'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Badge variant={entry.status === 'serving' ? 'default' : 'secondary'}>
+                                    {entry.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                              {queueEntries.length > 5 && (
+                                <p className="text-sm text-gray-600 text-center">
+                                  +{queueEntries.length - 5} more waiting
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                              <p className="text-gray-600">No one waiting in this queue</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Queue</h3>
+                    <p className="text-gray-600">Choose a queue from the Queue Management tab to start operations.</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
+
 
         {/* Quick Links */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
