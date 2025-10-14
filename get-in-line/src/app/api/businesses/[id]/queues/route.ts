@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { queues, queueEntries, users } from '@/lib/drizzle/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { hasBusinessAccess } from '@/lib/auth-helpers';
 
 export async function GET(
@@ -61,7 +61,7 @@ export async function GET(
       })
       .from(queues)
       .where(eq(queues.businessId, businessId))
-      .orderBy(queues.createdAt);
+      .orderBy(desc(queues.createdAt));
 
     // Get queue statistics for each queue
     const queuesWithStats = await Promise.all(

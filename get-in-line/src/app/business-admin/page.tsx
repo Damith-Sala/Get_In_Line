@@ -201,7 +201,7 @@ export default function BusinessAdminPage() {
     }
 
     try {
-      const response = await fetch(`/api/queues?id=${queueId}`, {
+      const response = await fetch(`/api/queues/${queueId}`, {
         method: 'DELETE',
       });
 

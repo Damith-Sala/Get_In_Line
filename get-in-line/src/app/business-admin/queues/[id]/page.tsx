@@ -92,7 +92,7 @@ export default function QueueManagementPage() {
           .from('queue_entries')
           .select(`
             *,
-            user:users(name, email)
+            user:users!user_id(name, email)
           `)
           .eq('queue_id', queueId)
           .order('position');
@@ -152,7 +152,7 @@ export default function QueueManagementPage() {
       setActionLoading('delete');
       setError(null);
 
-      const response = await fetch(`/api/queues?id=${queueId}`, {
+      const response = await fetch(`/api/queues/${queueId}`, {
         method: 'DELETE',
       });
 

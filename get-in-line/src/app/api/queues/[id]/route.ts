@@ -90,7 +90,10 @@ export async function PUT(
   try {
     const queueId = params.id;
     const body = await request.json();
+    console.log('PUT request for queue:', queueId, 'with body:', body);
+    
     const validatedData = queueSchema.parse(body);
+    console.log('Validated data:', validatedData);
     
     // Get authenticated user
     const cookieStore = cookies();
@@ -115,8 +118,11 @@ export async function PUT(
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
+      console.log('Auth error:', authError);
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+    
+    console.log('User authenticated:', user.id);
     
     // Check if user is a business user (admin or staff)
     const userRecord = await db
@@ -126,14 +132,19 @@ export async function PUT(
       .limit(1);
 
     if (userRecord.length === 0) {
+      console.log('User not found in database');
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const userRole = userRecord[0].role;
     const userBusinessId = userRecord[0].businessId;
+    
+    console.log('User role:', userRole);
+    console.log('User business ID:', userBusinessId);
 
-    // Only allow business users (staff, admin, super_admin) to update queues
+    // Only allow business users (staff, business_admin, super_admin) to update queues
     if (!['staff', 'business_admin', 'super_admin'].includes(userRole)) {
+      console.log('User role not allowed:', userRole);
       return NextResponse.json({ 
         error: 'Only business accounts can update queues' 
       }, { status: 403 });
@@ -141,6 +152,7 @@ export async function PUT(
 
     // Ensure user has a business association
     if (!userBusinessId) {
+      console.log('User has no business association');
       return NextResponse.json({ 
         error: 'User must be associated with a business to update queues' 
       }, { status: 403 });
@@ -154,26 +166,46 @@ export async function PUT(
       .limit(1);
 
     if (queueRecord.length === 0) {
+      console.log('Queue not found:', queueId);
       return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
     }
 
+    console.log('Queue found:', queueRecord[0]);
+    console.log('Queue business ID:', queueRecord[0].businessId);
+
     if (queueRecord[0].businessId !== userBusinessId) {
+      console.log('Queue does not belong to user business');
       return NextResponse.json({ 
         error: 'You can only update queues from your own business' 
       }, { status: 403 });
     }
 
-    // Check if user has permission to edit queues (for staff members)
+    // Check if user has permission to edit queues (for staff members only)
+    // Business admins and super admins have full permissions by default
     if (userRole === 'staff') {
-      const canEdit = await hasPermission(user.id, userBusinessId, 'canEditQueues');
-      if (!canEdit) {
+      try {
+        console.log('Checking staff permissions for user:', user.id);
+        const canEdit = await hasPermission(user.id, userBusinessId, 'canEditQueues');
+        console.log('Staff edit permission result:', canEdit);
+        if (!canEdit) {
+          console.log('Staff user does not have edit permission');
+          return NextResponse.json({ 
+            error: 'You do not have permission to edit queues. Contact your business admin.' 
+          }, { status: 403 });
+        }
+      } catch (permissionError: any) {
+        console.error('Permission check error:', permissionError);
+        console.error('Permission error stack:', permissionError.stack);
         return NextResponse.json({ 
-          error: 'You do not have permission to edit queues. Contact your business admin.' 
-        }, { status: 403 });
+          error: 'Permission check failed' 
+        }, { status: 500 });
       }
+    } else {
+      console.log('User is business admin or super admin, skipping permission check');
     }
     
     // Update queue
+    console.log('Attempting to update queue:', queueId);
     const updatedQueue = await db
       .update(queues)
       .set({
@@ -188,12 +220,14 @@ export async function PUT(
       .where(eq(queues.id, queueId))
       .returning();
 
+    console.log('Queue updated successfully:', updatedQueue[0]);
     return NextResponse.json(updatedQueue[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update queue error:', error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json(
-      { error: 'Failed to update queue' },
-      { status: 400 }
+      { error: 'Failed to update queue', details: error.message },
+      { status: 500 }
     );
   }
 }
@@ -204,6 +238,20 @@ export async function DELETE(
 ) {
   try {
     const queueId = params.id;
+    console.log('DELETE request for queue:', queueId);
+    
+    // Test database connection
+    try {
+      console.log('Testing database connection...');
+      await db.select().from(users).limit(1);
+      console.log('Database connection successful');
+    } catch (dbError: any) {
+      console.error('Database connection failed:', dbError);
+      return NextResponse.json({ 
+        error: 'Database connection failed', 
+        details: dbError.message 
+      }, { status: 500 });
+    }
     
     // Get authenticated user
     const cookieStore = cookies();
@@ -228,8 +276,11 @@ export async function DELETE(
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
+      console.log('Auth error:', authError);
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+    
+    console.log('User authenticated:', user.id);
     
     // Check if user is a business user (admin or staff)
     const userRecord = await db
@@ -239,14 +290,19 @@ export async function DELETE(
       .limit(1);
 
     if (userRecord.length === 0) {
+      console.log('User not found in database');
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const userRole = userRecord[0].role;
     const userBusinessId = userRecord[0].businessId;
+    
+    console.log('User role:', userRole);
+    console.log('User business ID:', userBusinessId);
 
-    // Only allow business users (staff, admin, super_admin) to delete queues
+    // Only allow business users (staff, business_admin, super_admin) to delete queues
     if (!['staff', 'business_admin', 'super_admin'].includes(userRole)) {
+      console.log('User role not allowed:', userRole);
       return NextResponse.json({ 
         error: 'Only business accounts can delete queues' 
       }, { status: 403 });
@@ -254,6 +310,7 @@ export async function DELETE(
 
     // Ensure user has a business association
     if (!userBusinessId) {
+      console.log('User has no business association');
       return NextResponse.json({ 
         error: 'User must be associated with a business to delete queues' 
       }, { status: 403 });
@@ -267,37 +324,91 @@ export async function DELETE(
       .limit(1);
 
     if (queueRecord.length === 0) {
+      console.log('Queue not found:', queueId);
       return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
     }
 
+    console.log('Queue found:', queueRecord[0]);
+    console.log('Queue business ID:', queueRecord[0].businessId);
+
     if (queueRecord[0].businessId !== userBusinessId) {
+      console.log('Queue does not belong to user business');
       return NextResponse.json({ 
         error: 'You can only delete queues from your own business' 
       }, { status: 403 });
     }
 
-    // Check if user has permission to delete queues (for staff members)
+    // Check if user has permission to delete queues (for staff members only)
+    // Business admins and super admins have full permissions by default
     if (userRole === 'staff') {
-      const canDelete = await hasPermission(user.id, userBusinessId, 'canDeleteQueues');
-      if (!canDelete) {
+      try {
+        console.log('Checking staff permissions for user:', user.id);
+        const canDelete = await hasPermission(user.id, userBusinessId, 'canDeleteQueues');
+        console.log('Staff delete permission result:', canDelete);
+        if (!canDelete) {
+          console.log('Staff user does not have delete permission');
+          return NextResponse.json({ 
+            error: 'You do not have permission to delete queues. Contact your business admin.' 
+          }, { status: 403 });
+        }
+      } catch (permissionError: any) {
+        console.error('Permission check error:', permissionError);
+        console.error('Permission error stack:', permissionError.stack);
         return NextResponse.json({ 
-          error: 'You do not have permission to delete queues. Contact your business admin.' 
-        }, { status: 403 });
+          error: 'Permission check failed' 
+        }, { status: 500 });
       }
+    } else {
+      console.log('User is business admin or super admin, skipping permission check');
     }
 
-    // Delete the queue (this will cascade delete queue entries)
-    await db.delete(queues).where(eq(queues.id, queueId));
+    // Delete the queue and its entries
+    console.log('Attempting to delete queue:', queueId);
+    
+    // First, let's check if the queue exists and get its details
+    const queueToDelete = await db
+      .select()
+      .from(queues)
+      .where(eq(queues.id, queueId))
+      .limit(1);
+    
+    if (queueToDelete.length === 0) {
+      console.log('Queue not found for deletion:', queueId);
+      return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
+    }
+    
+    console.log('Queue found for deletion:', queueToDelete[0]);
+    
+    // Check if there are any queue entries
+    const existingEntries = await db
+      .select()
+      .from(queueEntries)
+      .where(eq(queueEntries.queueId, queueId));
+    
+    console.log(`Found ${existingEntries.length} queue entries to delete`);
+    
+    // Delete all queue entries first
+    if (existingEntries.length > 0) {
+      console.log('Deleting queue entries...');
+      const deleteEntriesResult = await db.delete(queueEntries).where(eq(queueEntries.queueId, queueId));
+      console.log('Queue entries deleted:', deleteEntriesResult);
+    }
+    
+    // Now delete the queue
+    console.log('Deleting queue...');
+    const deleteResult = await db.delete(queues).where(eq(queues.id, queueId));
+    console.log('Queue deleted successfully:', deleteResult);
 
     return NextResponse.json({ 
       message: 'Queue deleted successfully' 
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete queue error:', error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json(
-      { error: 'Failed to delete queue' },
-      { status: 400 }
+      { error: 'Failed to delete queue', details: error.message },
+      { status: 500 }
     );
   }
 }
