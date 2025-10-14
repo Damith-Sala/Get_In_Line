@@ -177,7 +177,12 @@ export async function PUT(
     const updatedQueue = await db
       .update(queues)
       .set({
-        ...validatedData,
+        name: validatedData.name,
+        description: validatedData.description,
+        serviceType: validatedData.serviceType,
+        maxSize: validatedData.maxSize,
+        estimatedWaitTime: validatedData.estimatedWaitTime,
+        isActive: validatedData.isActive,
         updatedAt: new Date(),
       })
       .where(eq(queues.id, queueId))

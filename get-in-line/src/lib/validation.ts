@@ -28,12 +28,12 @@ export const branchSchema = z.object({
 // Queue validation schemas (updated for business support)
 export const queueSchema = z.object({
   name: z.string().min(2),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   businessId: z.string().optional(),
   branchId: z.string().optional(),
-  serviceType: z.string().optional(),
-  maxSize: z.number().positive().optional(),
-  estimatedWaitTime: z.number().positive().optional(),
+  serviceType: z.string().optional().nullable(),
+  maxSize: z.number().positive().optional().nullable(),
+  estimatedWaitTime: z.number().positive().optional().nullable(),
   isActive: z.boolean().default(true),
 });
 

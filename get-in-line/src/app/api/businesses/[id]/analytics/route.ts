@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { businesses, queues, queueEntries, queueAnalytics, users } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
 import { hasBusinessAccess } from '@/lib/auth-helpers';
 
 export async function GET(
@@ -78,7 +78,7 @@ export async function GET(
       .select()
       .from(queueEntries)
       .where(and(
-        sql`${queueEntries.queueId} = ANY(${queueIds})`,
+        inArray(queueEntries.queueId, queueIds),
         gte(queueEntries.enteredAt, startDate)
       ));
 
@@ -162,7 +162,10 @@ export async function GET(
   } catch (error) {
     console.error('Analytics error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch analytics' },
+      { 
+        error: 'Failed to fetch analytics',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

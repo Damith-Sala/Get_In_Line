@@ -116,8 +116,9 @@ export default function QueueManagement({
           name: formData.name.trim(),
           description: formData.description.trim() || null,
           serviceType: formData.serviceType.trim() || null,
-          maxSize: formData.maxSize ? parseInt(formData.maxSize) : null,
-          estimatedWaitTime: formData.estimatedWaitTime ? parseInt(formData.estimatedWaitTime) : null,
+          maxSize: formData.maxSize && parseInt(formData.maxSize) > 0 ? parseInt(formData.maxSize) : null,
+          estimatedWaitTime: formData.estimatedWaitTime && parseInt(formData.estimatedWaitTime) > 0 ? parseInt(formData.estimatedWaitTime) : null,
+          isActive: true,
         }),
       });
 
@@ -162,8 +163,9 @@ export default function QueueManagement({
           name: formData.name.trim(),
           description: formData.description.trim() || null,
           serviceType: formData.serviceType.trim() || null,
-          maxSize: formData.maxSize ? parseInt(formData.maxSize) : null,
-          estimatedWaitTime: formData.estimatedWaitTime ? parseInt(formData.estimatedWaitTime) : null,
+          maxSize: formData.maxSize && parseInt(formData.maxSize) > 0 ? parseInt(formData.maxSize) : null,
+          estimatedWaitTime: formData.estimatedWaitTime && parseInt(formData.estimatedWaitTime) > 0 ? parseInt(formData.estimatedWaitTime) : null,
+          isActive: editingQueue.is_active,
         }),
       });
 

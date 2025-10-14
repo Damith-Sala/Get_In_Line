@@ -71,6 +71,21 @@ export const ADMIN_PERMISSIONS: StaffPermissions = {
   canManageNotifications: true,
 };
 
+export const QUEUE_MANAGER_PERMISSIONS: StaffPermissions = {
+  canCreateQueues: true,
+  canEditQueues: true,
+  canDeleteQueues: false,
+  canManageQueueOperations: true,
+  canManageStaff: false,
+  canViewStaff: true,
+  canViewAnalytics: false,
+  canExportData: false,
+  canEditBusinessSettings: false,
+  canManageBranches: false,
+  canSendNotifications: false,
+  canManageNotifications: false,
+};
+
 /**
  * Get user's permissions for a specific business
  * @param userId - The user's ID
@@ -91,6 +106,19 @@ export async function getUserPermissions(userId: string, businessId: string): Pr
       .limit(1);
 
     if (staffRecord.length === 0) {
+      // If no staff record found, check if user is a business admin
+      const userRecord = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (userRecord.length > 0 && userRecord[0].role === 'business_admin') {
+        return ADMIN_PERMISSIONS;
+      }
+      
+      // Default staff permissions for users without explicit staff records
+      // Only give basic permissions - Business Admin must explicitly grant queue management
       return DEFAULT_STAFF_PERMISSIONS;
     }
 

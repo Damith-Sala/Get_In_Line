@@ -67,7 +67,10 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log('Queue creation request body:', body);
+    
     const validatedData = queueSchema.parse(body);
+    console.log('Validated data:', validatedData);
     
     // Get authenticated user
     const cookieStore = cookies();
@@ -135,7 +138,12 @@ export async function POST(request: Request) {
     
     // Create queue with business association
     const newQueue = await db.insert(queues).values({
-      ...validatedData,
+      name: validatedData.name,
+      description: validatedData.description,
+      serviceType: validatedData.serviceType,
+      maxSize: validatedData.maxSize,
+      estimatedWaitTime: validatedData.estimatedWaitTime,
+      isActive: validatedData.isActive,
       creatorId: user.id,
       businessId: userBusinessId,
     }).returning();
@@ -143,7 +151,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Create queue error:', error);
     return NextResponse.json(
-      { error: 'Failed to create queue' },
+      { 
+        error: 'Failed to create queue',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 400 }
     );
   }

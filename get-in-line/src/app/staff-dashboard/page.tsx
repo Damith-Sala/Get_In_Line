@@ -141,26 +141,18 @@ export default function StaffDashboard() {
         }
 
         // Load user permissions
-        const permissionsResponse = await fetch(`/api/users/me`);
+        const permissionsResponse = await fetch(`/api/users/me/permissions`);
         if (permissionsResponse.ok) {
-          const userData = await permissionsResponse.json();
-          if (userData.role === 'business_admin' || userData.role === 'super_admin') {
-            setUserPermissions({
-              canCreateQueues: true,
-              canEditQueues: true,
-              canDeleteQueues: true,
-              canManageQueueOperations: true,
-            });
-          } else if (userData.role === 'staff') {
-            // For staff, we would need to check their specific permissions
-            // For now, we'll set basic permissions
-            setUserPermissions({
-              canCreateQueues: false,
-              canEditQueues: false,
-              canDeleteQueues: false,
-              canManageQueueOperations: true,
-            });
-          }
+          const permissionsData = await permissionsResponse.json();
+          setUserPermissions(permissionsData.permissions);
+        } else {
+          // Fallback to basic permissions if API fails
+          setUserPermissions({
+            canCreateQueues: false,
+            canEditQueues: false,
+            canDeleteQueues: false,
+            canManageQueueOperations: true,
+          });
         }
 
       } catch (error) {
