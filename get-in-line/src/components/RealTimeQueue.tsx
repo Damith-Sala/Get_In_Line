@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useQueueSocket } from '@/hooks/useSocket'
+import { useQueueRealtime } from '@/hooks/useSupabaseRealtime'
 
 interface RealTimeQueueProps {
   queueId: string
@@ -10,21 +10,20 @@ interface RealTimeQueueProps {
 }
 
 export default function RealTimeQueue({ queueId, userId, userPosition }: RealTimeQueueProps) {
-  const { socket, isConnected, position, queueStatus, currentServing } = useQueueSocket(queueId)
+  const { isConnected, position, queueStatus, currentServing } = useQueueRealtime(queueId)
   const [notifications, setNotifications] = useState<string[]>([])
 
   useEffect(() => {
-    if (socket) {
-      socket.on('next-called', (data: { position: number, message: string }) => {
-        setNotifications(prev => [...prev, data.message])
-        
-        // Auto-remove notification after 5 seconds
-        setTimeout(() => {
-          setNotifications(prev => prev.slice(1))
-        }, 5000)
-      })
+    if (currentServing) {
+      const message = `Position ${currentServing} is now being served!`
+      setNotifications(prev => [...prev, message])
+      
+      // Auto-remove notification after 5 seconds
+      setTimeout(() => {
+        setNotifications(prev => prev.slice(1))
+      }, 5000)
     }
-  }, [socket])
+  }, [currentServing])
 
   const displayPosition = position || userPosition
 
@@ -87,10 +86,22 @@ export default function RealTimeQueue({ queueId, userId, userPosition }: RealTim
       {queueStatus && (
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-medium text-gray-800 mb-2">Queue Information</h4>
-          <div className="text-sm text-gray-600">
-            <p>Last updated: {new Date(queueStatus.timestamp).toLocaleTimeString()}</p>
-            {queueStatus.currentServing && (
-              <p>Currently serving: Position #{queueStatus.currentServing}</p>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Waiting:</span>
+              <span className="font-medium">{queueStatus.totalWaiting || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Estimated Wait:</span>
+              <span className="font-medium">{queueStatus.estimatedWaitTime || 0} min</span>
+            </div>
+            {queueStatus.isActive !== undefined && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Status:</span>
+                <span className={`font-medium ${queueStatus.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                  {queueStatus.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
             )}
           </div>
         </div>

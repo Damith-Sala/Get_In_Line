@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import QueueManagement from '@/components/QueueManagement';
+import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { 
   Users, 
   Clock, 
@@ -81,6 +82,7 @@ export default function StaffDashboard() {
 
   const router = useRouter();
   const supabase = createClient();
+  const { supabase: realtimeSupabase, isConnected } = useSupabaseRealtime();
 
   useEffect(() => {
     async function loadData() {
@@ -167,6 +169,64 @@ export default function StaffDashboard() {
 
     loadData();
   }, [supabase]);
+
+  // Real-time subscription for queue updates
+  useEffect(() => {
+    if (!business?.id || !realtimeSupabase || queues.length === 0) return
+
+    const queueIds = queues.map(q => q.id).join(',')
+    
+    const channel = realtimeSupabase
+      .channel('staff-dashboard')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'queue_entries',
+          filter: `queue_id=in.(${queueIds})`
+        },
+        (payload) => {
+          console.log('Queue entry change detected:', payload)
+          // Refresh queue data when entries change
+          if (business?.id) {
+            // Refresh queues
+            fetch(`/api/businesses/${business.id}/queues`)
+              .then(res => res.ok ? res.json() : null)
+              .then(data => data && setQueues(data))
+              .catch(console.error)
+            
+            // Refresh queue entries if viewing a specific queue
+            if (selectedQueue) {
+              loadQueueEntries(selectedQueue.id)
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'queues',
+          filter: `business_id=eq.${business.id}`
+        },
+        (payload) => {
+          console.log('Queue status change detected:', payload)
+          // Update specific queue in the list
+          setQueues(prev => prev.map(q => 
+            q.id === payload.new.id ? { ...q, ...payload.new } : q
+          ))
+        }
+      )
+      .subscribe((status) => {
+        console.log('Staff dashboard subscription status:', status)
+      })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [business?.id, queues, selectedQueue, realtimeSupabase])
 
   const handleSignOut = async () => {
     try {
@@ -296,7 +356,13 @@ export default function StaffDashboard() {
                 Welcome back, {user?.email}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-gray-600">
+                  {isConnected ? 'Live Updates' : 'Connecting...'}
+                </span>
+              </div>
               <Link 
                 href="/dashboard" 
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 flex items-center gap-2"
@@ -371,7 +437,7 @@ export default function StaffDashboard() {
               <h2 className="text-2xl font-bold mb-6">Active Queues</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {queues.filter(queue => queue.is_active).map((queue) => (
-                  <Card key={queue.id} className="cursor-cursor-pointer card-hover hover:shadow-lg transition-shadow" onClick={() => handleQueueSelect(queue)}>
+                  <Card key={queue.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleQueueSelect(queue)}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>

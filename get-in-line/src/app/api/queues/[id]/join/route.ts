@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { queueEntries, users } from '@/lib/drizzle/schema';
 import { sql, eq } from 'drizzle-orm';
-import { broadcastToQueue } from '@/lib/socket-server';
 
 export async function POST(
   request: Request,
@@ -114,17 +113,7 @@ export async function POST(
       })
       .returning();
 
-    // 🚀 NEW: Broadcast position update to all clients in this queue
-    try {
-      broadcastToQueue(queueId, 'position-changed', {
-        queueId,
-        position: entry[0].position,
-        totalInQueue: position,
-        newUser: true
-      });
-    } catch (socketError) {
-      console.log('Socket broadcast failed (non-critical):', socketError);
-    }
+    // Real-time updates are now handled automatically by Supabase real-time subscriptions
       
     return NextResponse.json(entry[0], { status: 201 });
   } catch (error) {
