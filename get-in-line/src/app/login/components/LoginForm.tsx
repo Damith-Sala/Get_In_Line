@@ -24,6 +24,14 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
+      // Clear any existing session first to prevent conflicts
+      console.log('Clearing any existing session...');
+      await supabase.auth.signOut();
+      
+      // Wait a moment for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      console.log('Attempting login...');
       // Use our custom login API
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -42,30 +50,38 @@ export default function LoginForm() {
         throw new Error(data.error || 'Login failed');
       }
 
+      console.log('Login successful, checking user role...');
       // Check user role and redirect accordingly
       const usersResponse = await fetch('/api/users/me');
       if (usersResponse.ok) {
         const userData = await usersResponse.json();
+        console.log('User data received:', userData);
         
         if (userData.role === 'super_admin') {
           // Super admin - redirect to super admin dashboard
+          console.log('Redirecting to super admin dashboard');
           router.push('/super-admin');
         } else if (userData.role === 'staff') {
           // Staff user - redirect to staff dashboard
+          console.log('Redirecting to staff dashboard');
           router.push('/staff-dashboard');
         } else if (userData.role === 'business_admin') {
           // Business admin - redirect to business admin dashboard
+          console.log('Redirecting to business admin dashboard');
           router.push('/business-admin');
         } else {
           // All other users (customers) - redirect to dashboard
+          console.log('Redirecting to customer dashboard');
           router.push('/dashboard');
         }
       } else {
+        console.log('Failed to get user data, redirecting to dashboard');
         // Fallback to dashboard if we can't check role
         router.push('/dashboard');
       }
       router.refresh();
     } catch (e: any) {
+      console.error('Login error:', e);
       setError(e.message);
     } finally {
       setLoading(false);

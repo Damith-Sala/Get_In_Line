@@ -73,60 +73,92 @@ export default function BusinessAdminPage() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    let isMounted = true; // Add this guard
     
     async function loadData() {
+      // Add guard to prevent double execution
+      if (!isMounted) {
+        console.log('Business admin dashboard: Component unmounted, skipping loadData');
+        return;
+      }
+      
       try {
         setLoading(true);
         setError(null);
 
+        console.log('Business admin dashboard: Starting data load...');
+
         // Set a timeout to prevent infinite loading
         timeoutId = setTimeout(() => {
-          setError('Loading is taking longer than expected. Please check your connection and try again.');
-          setLoading(false);
+          if (isMounted) {
+            console.log('Business admin dashboard: Timeout reached');
+            setError('Loading is taking longer than expected. Please check your connection and try again.');
+            setLoading(false);
+          }
         }, 30000); // 30 second timeout
 
         // Get current user
+        console.log('Business admin dashboard: Getting current user...');
         const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!isMounted) return; // Check again after async operation
+        
         setUser(user);
 
         if (!user) {
+          console.log('Business admin dashboard: No user found');
           setError('Please log in to access business admin features');
           return;
         }
 
+        console.log('Business admin dashboard: User found:', user.id);
+
         // Get user's business using new efficient endpoint
+        console.log('Business admin dashboard: Fetching user data...');
         const usersResponse = await fetch('/api/users/me');
+        
+        if (!isMounted) return; // Check again after async operation
+        
         if (!usersResponse.ok) {
           const errorText = await usersResponse.text();
-          console.error('Failed to fetch user data:', usersResponse.status, errorText);
-          setError('Failed to fetch user data');
+          console.error('Business admin dashboard: Failed to fetch user data:', usersResponse.status, errorText);
+          setError(`Failed to fetch user data: ${usersResponse.status} ${errorText}`);
           return;
         }
         
         const userData = await usersResponse.json();
-        console.log('User data:', userData);
+        console.log('Business admin dashboard: User data received:', userData);
         
         if (!userData.businessId) {
+          console.log('Business admin dashboard: No business ID found');
           setError('No business associated with your account');
           return;
         }
 
         const businessId = userData.businessId;
+        console.log('Business admin dashboard: Business ID:', businessId);
 
         // Fetch business details using API
+        console.log('Business admin dashboard: Fetching business data...');
         const businessResponse = await fetch(`/api/businesses/${businessId}`);
+        
+        if (!isMounted) return; // Check again after async operation
+        
         if (!businessResponse.ok) {
           const errorText = await businessResponse.text();
-          console.error('Failed to fetch business data:', businessResponse.status, errorText);
-          setError('Failed to fetch business data');
+          console.error('Business admin dashboard: Failed to fetch business data:', businessResponse.status, errorText);
+          setError(`Failed to fetch business data: ${businessResponse.status} ${errorText}`);
           return;
         }
+        
         const businessData = await businessResponse.json();
-        console.log('Business data:', businessData);
+        console.log('Business admin dashboard: Business data received:', businessData);
         setBusiness(businessData);
 
         // Fetch branches using API
         const branchesResponse = await fetch(`/api/businesses/${businessId}/branches`);
+        if (!isMounted) return; // Check again after async operation
+        
         if (branchesResponse.ok) {
           const branchesData = await branchesResponse.json();
           setBranches(branchesData || []);
@@ -136,6 +168,8 @@ export default function BusinessAdminPage() {
 
         // Fetch queues using API
         const queuesResponse = await fetch('/api/queues');
+        if (!isMounted) return; // Check again after async operation
+        
         if (queuesResponse.ok) {
           const queuesData = await queuesResponse.json();
           console.log('All queues data:', queuesData);
@@ -158,6 +192,8 @@ export default function BusinessAdminPage() {
         // Fetch analytics
         try {
           const analyticsResponse = await fetch(`/api/businesses/${businessId}/analytics?days=7`);
+          if (!isMounted) return; // Check again after async operation
+          
           if (analyticsResponse.ok) {
             const analyticsData = await analyticsResponse.json();
             setAnalytics(analyticsData);
@@ -167,17 +203,24 @@ export default function BusinessAdminPage() {
         }
 
       } catch (err: any) {
-        setError(err.message);
+        if (isMounted) {
+          console.error('Business admin dashboard: Error in loadData:', err);
+          setError(`Dashboard loading failed: ${err.message}`);
+        }
       } finally {
-        clearTimeout(timeoutId);
-        setLoading(false);
+        if (isMounted) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+          console.log('Business admin dashboard: Data loading completed');
+        }
       }
     }
 
     loadData();
 
-    // Cleanup function to clear timeout
+    // Cleanup function to clear timeout and set unmounted flag
     return () => {
+      isMounted = false; // Set unmounted flag
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
