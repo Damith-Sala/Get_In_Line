@@ -57,6 +57,18 @@ module.exports = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			success: {
+  				DEFAULT: 'hsl(142, 76%, 36%)',
+  				foreground: 'hsl(355, 7%, 97%)'
+  			},
+  			warning: {
+  				DEFAULT: 'hsl(38, 92%, 50%)',
+  				foreground: 'hsl(355, 7%, 97%)'
+  			},
+  			info: {
+  				DEFAULT: 'hsl(199, 89%, 48%)',
+  				foreground: 'hsl(355, 7%, 97%)'
   			}
   		}
   	}
