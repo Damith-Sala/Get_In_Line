@@ -4,6 +4,23 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import RealTimeQueue from '@/components/RealTimeQueue';
+import QueueManagement from '@/components/QueueManagement';
+// import { getUserPermissions, StaffPermissions } from '@/lib/permission-helpers';
+
+interface StaffPermissions {
+  canCreateQueues: boolean;
+  canEditQueues: boolean;
+  canDeleteQueues: boolean;
+  canManageQueueOperations: boolean;
+  canManageStaff: boolean;
+  canViewStaff: boolean;
+  canViewAnalytics: boolean;
+  canExportData: boolean;
+  canEditBusinessSettings: boolean;
+  canManageBranches: boolean;
+  canSendNotifications: boolean;
+  canManageNotifications: boolean;
+}
 
 interface Business {
   id: string;
@@ -28,10 +45,14 @@ interface Queue {
   id: string;
   name: string;
   description: string | null;
-  serviceType: string | null;
-  maxSize: number | null;
-  isActive: boolean;
-  estimatedWaitTime: number | null;
+  service_type: string | null;
+  max_size: number | null;
+  is_active: boolean;
+  estimated_wait_time: number | null;
+  current_position?: number;
+  total_waiting?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Analytics {
@@ -68,6 +89,8 @@ export default function BusinessAdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [userPermissions, setUserPermissions] = useState<StaffPermissions | null>(null);
+  const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
 
   const supabase = createClient();
 
@@ -137,6 +160,49 @@ export default function BusinessAdminPage() {
 
         const businessId = userData.businessId;
         console.log('Business admin dashboard: Business ID:', businessId);
+
+        // Get user permissions via API
+        try {
+          const permissionsResponse = await fetch('/api/users/me/permissions');
+          if (permissionsResponse.ok) {
+            const permissionsData = await permissionsResponse.json();
+            setUserPermissions(permissionsData.permissions);
+            console.log('User permissions:', permissionsData.permissions);
+          } else {
+            // Set default permissions for business admin
+            setUserPermissions({
+              canCreateQueues: true,
+              canEditQueues: true,
+              canDeleteQueues: true,
+              canManageQueueOperations: true,
+              canManageStaff: true,
+              canViewStaff: true,
+              canViewAnalytics: true,
+              canExportData: true,
+              canEditBusinessSettings: true,
+              canManageBranches: true,
+              canSendNotifications: true,
+              canManageNotifications: true,
+            });
+          }
+        } catch (permError) {
+          console.error('Error fetching permissions:', permError);
+          // Set default permissions for business admin
+          setUserPermissions({
+            canCreateQueues: true,
+            canEditQueues: true,
+            canDeleteQueues: true,
+            canManageQueueOperations: true,
+            canManageStaff: true,
+            canViewStaff: true,
+            canViewAnalytics: true,
+            canExportData: true,
+            canEditBusinessSettings: true,
+            canManageBranches: true,
+            canSendNotifications: true,
+            canManageNotifications: true,
+          });
+        }
 
         // Fetch business details using API
         console.log('Business admin dashboard: Fetching business data...');
@@ -238,27 +304,14 @@ export default function BusinessAdminPage() {
     }
   };
 
-  const handleDeleteQueue = async (queueId: string) => {
-    if (!confirm('Are you sure you want to delete this queue? This action cannot be undone.')) {
-      return;
-    }
+  const handleQueuesChange = (updatedQueues: Queue[]) => {
+    setQueues(updatedQueues);
+  };
 
-    try {
-      const response = await fetch(`/api/queues/${queueId}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete queue');
-      }
-
-      // Refresh the page to update the queue list
-      window.location.reload();
-    } catch (err: any) {
-      alert(`Failed to delete queue: ${err.message}`);
-    }
+  const handleQueueSelect = (queue: Queue) => {
+    setSelectedQueue(queue);
+    // Navigate to the detailed queue management page
+    window.location.href = `/business-admin/queues/${queue.id}`;
   };
 
   if (loading) {
@@ -343,39 +396,45 @@ export default function BusinessAdminPage() {
           <div className="bg-white rounded-lg shadow p-4">
             <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
             <div className="flex flex-wrap gap-3">
-              <Link 
-                href="/queues/create" 
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Create Queue
-              </Link>
-              <Link 
-                href="/business-admin/staff" 
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-                Manage Staff
-              </Link>
-              <Link 
-                href="/business-admin/branches/create" 
-                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Add Branch
-              </Link>
+              {userPermissions?.canCreateQueues && (
+                <Link 
+                  href="/queues/create" 
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Queue
+                </Link>
+              )}
+              {userPermissions?.canManageStaff && (
+                <Link 
+                  href="/business-admin/staff" 
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                  </svg>
+                  Manage Staff
+                </Link>
+              )}
+              {userPermissions?.canManageBranches && (
+                <Link 
+                  href="/business-admin/branches/create" 
+                  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Add Branch
+                </Link>
+              )}
             </div>
           </div>
         </div>
 
         {/* Quick Stats */}
-        {analytics && (
+        {analytics && userPermissions?.canViewAnalytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-sm font-medium text-gray-500">Total Queues</h3>
@@ -396,72 +455,29 @@ export default function BusinessAdminPage() {
           </div>
         )}
 
+        {/* Queue Management Section */}
+        {userPermissions && (
+          <div className="mb-8">
+            <QueueManagement
+              businessId={business.id}
+              queues={queues}
+              onQueuesChange={handleQueuesChange}
+              onQueueSelect={handleQueueSelect}
+              userPermissions={{
+                canCreateQueues: userPermissions.canCreateQueues,
+                canEditQueues: userPermissions.canEditQueues,
+                canDeleteQueues: userPermissions.canDeleteQueues,
+              }}
+            />
+          </div>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Queues Management */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Queue Management</h2>
-                <Link 
-                  href="/queues/create" 
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                  Create Queue
-                </Link>
-              </div>
-            </div>
-            <div className="p-6">
-              {queues.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No queues created yet</p>
-              ) : (
-                <div className="space-y-4">
-                  {queues.map((queue) => (
-                    <div key={queue.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">{queue.name}</h3>
-                          {queue.serviceType && (
-                            <p className="text-sm text-gray-500">{queue.serviceType}</p>
-                          )}
-                          <div className="flex gap-4 mt-2 text-sm">
-                            <span className={`px-2 py-1 rounded ${
-                              queue.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {queue.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                            {queue.maxSize && (
-                              <span className="text-gray-500">Max: {queue.maxSize}</span>
-                            )}
-                            {queue.estimatedWaitTime && (
-                              <span className="text-gray-500">~{queue.estimatedWaitTime} min wait</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Link 
-                            href={`/business-admin/queues/${queue.id}`}
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            Manage
-                          </Link>
-                          <button
-                            onClick={() => handleDeleteQueue(queue.id)}
-                            className="text-red-600 hover:text-red-800 text-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Branches Management */}
-          <div className="bg-white rounded-lg shadow">
+          {userPermissions?.canManageBranches && (
+            <div className="bg-white rounded-lg shadow">
             <div className="p-6 border-b">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold">Branches</h2>
@@ -508,10 +524,11 @@ export default function BusinessAdminPage() {
               )}
             </div>
           </div>
+          )}
         </div>
 
         {/* Real-time Queue Status */}
-        {queues.length > 0 && (
+        {queues.length > 0 && userPermissions?.canManageQueueOperations && (
           <div className="mt-8">
             <h2 className="text-2xl font-bold mb-6">Live Queue Status</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -530,10 +547,11 @@ export default function BusinessAdminPage() {
 
         {/* Additional Management Links */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link 
-            href="/business-admin/staff" 
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-500"
-          >
+          {userPermissions?.canManageStaff && (
+            <Link 
+              href="/business-admin/staff" 
+              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-500"
+            >
             <div className="flex items-center gap-3 mb-2">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -547,22 +565,27 @@ export default function BusinessAdminPage() {
               Control who can create queues, view analytics, and manage operations
             </div>
           </Link>
+          )}
           
-          <Link 
-            href="/business-admin/analytics" 
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-          >
+          {userPermissions?.canViewAnalytics && (
+            <Link 
+              href="/business-admin/analytics" 
+              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+            >
             <h3 className="text-lg font-semibold mb-2">Analytics</h3>
             <p className="text-gray-600">View detailed analytics and reports</p>
           </Link>
+          )}
           
-          <Link 
-            href="/business-admin/notifications" 
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-          >
+          {userPermissions?.canSendNotifications && (
+            <Link 
+              href="/business-admin/notifications" 
+              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+            >
             <h3 className="text-lg font-semibold mb-2">Notifications</h3>
             <p className="text-gray-600">Send announcements and manage notifications</p>
           </Link>
+          )}
         </div>
       </div>
     </div>

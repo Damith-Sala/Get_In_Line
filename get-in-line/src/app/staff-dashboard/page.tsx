@@ -43,6 +43,8 @@ interface Queue {
   estimated_wait_time: number | null;
   current_position?: number;
   total_waiting?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface QueueEntry {
