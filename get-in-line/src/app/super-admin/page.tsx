@@ -32,7 +32,8 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
 
 interface SystemStats {
@@ -132,6 +133,11 @@ export default function SuperAdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [categorizedUsers, setCategorizedUsers] = useState<CategorizedUsers | null>(null);
+  const [allQueues, setAllQueues] = useState<any[]>([]);
+  const [filteredQueues, setFilteredQueues] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBusiness, setSelectedBusiness] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -186,6 +192,13 @@ export default function SuperAdminDashboard() {
           const businessesData = await businessesResponse.json();
           setBusinesses(businessesData || []);
         }
+        
+        // Load all queues
+        const queuesResponse = await fetch('/api/super-admin/queues');
+        if (queuesResponse.ok) {
+          const queuesData = await queuesResponse.json();
+          setAllQueues(queuesData.queues || []);
+        }
 
       } catch (err: any) {
         setError(err.message);
@@ -196,6 +209,37 @@ export default function SuperAdminDashboard() {
 
     loadData();
   }, []);
+
+  // Filter queues based on search and filter criteria
+  useEffect(() => {
+    let filtered = allQueues;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(queue => 
+        queue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        queue.business?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        queue.serviceType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        queue.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Business filter
+    if (selectedBusiness) {
+      filtered = filtered.filter(queue => queue.business?.id === selectedBusiness);
+    }
+
+    // Status filter
+    if (selectedStatus) {
+      if (selectedStatus === 'active') {
+        filtered = filtered.filter(queue => queue.isActive);
+      } else if (selectedStatus === 'inactive') {
+        filtered = filtered.filter(queue => !queue.isActive);
+      }
+    }
+
+    setFilteredQueues(filtered);
+  }, [allQueues, searchTerm, selectedBusiness, selectedStatus]);
 
   const categorizeUsers = (users: User[]): CategorizedUsers => {
     const categories: CategorizedUsers = {
@@ -347,6 +391,31 @@ export default function SuperAdminDashboard() {
       }
     } catch (err: any) {
       alert(`Failed to ${action} business: ${err.message}`);
+    }
+  };
+
+  const handleQueueToggle = async (queueId: string, isActive: boolean) => {
+    try {
+      const response = await fetch(`/api/super-admin/queues/${queueId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive })
+      });
+
+      if (response.ok) {
+        alert(`Queue ${isActive ? 'activated' : 'deactivated'} successfully`);
+        // Update the local state
+        setAllQueues(prevQueues => 
+          prevQueues.map(queue => 
+            queue.id === queueId ? { ...queue, isActive } : queue
+          )
+        );
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to ${isActive ? 'activate' : 'deactivate'} queue: ${errorData.error}`);
+      }
+    } catch (err: any) {
+      alert(`Failed to ${isActive ? 'activate' : 'deactivate'} queue: ${err.message}`);
     }
   };
 
@@ -747,9 +816,10 @@ export default function SuperAdminDashboard() {
 
           {/* Management Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="users">User Management</TabsTrigger>
               <TabsTrigger value="businesses">Business Management</TabsTrigger>
+              <TabsTrigger value="queues">Queue Management</TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
@@ -1076,6 +1146,237 @@ export default function SuperAdminDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="queues" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Queue Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage all queues across the platform
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">
+                        All Platform Queues ({filteredQueues.length} of {allQueues.length})
+                      </h3>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => window.open('/queues/create', '_blank')}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Queue
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => window.location.reload()}
+                        >
+                          <Activity className="h-4 w-4 mr-2" />
+                          Refresh
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Queue Statistics Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{filteredQueues.length}</div>
+                        <div className="text-sm text-gray-600">Filtered Queues</div>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">
+                          {filteredQueues.filter(q => q.isActive).length}
+                        </div>
+                        <div className="text-sm text-gray-600">Active Queues</div>
+                      </div>
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {filteredQueues.reduce((sum, q) => sum + (q.statistics?.waitingEntries || 0), 0)}
+                        </div>
+                        <div className="text-sm text-gray-600">Waiting Customers</div>
+                      </div>
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">
+                          {filteredQueues.reduce((sum, q) => sum + (q.statistics?.totalEntries || 0), 0)}
+                        </div>
+                        <div className="text-sm text-gray-600">Total Entries</div>
+                      </div>
+                    </div>
+                    
+                    {/* Search and Filter */}
+                    <div className="flex gap-4 mb-4">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="Search queues by name, business, or service type..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      <select 
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedBusiness}
+                        onChange={(e) => setSelectedBusiness(e.target.value)}
+                      >
+                        <option value="">All Businesses</option>
+                        {businesses.map((business) => (
+                          <option key={business.id} value={business.id}>
+                            {business.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select 
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                      >
+                        <option value="">All Status</option>
+                        <option value="active">Active Only</option>
+                        <option value="inactive">Inactive Only</option>
+                      </select>
+                    </div>
+
+                    {/* Individual Queue List - All Queues from All Businesses */}
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {filteredQueues.map((queue) => (
+                        <div key={queue.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-3 h-3 rounded-full ${queue.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="font-semibold text-lg">{queue.name}</h4>
+                                  <Badge variant={queue.isActive ? "default" : "secondary"} className="text-xs">
+                                    {queue.isActive ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                                  <div className="flex items-center space-x-1">
+                                    <Building2 className="h-4 w-4 text-blue-600" />
+                                    <span className="font-medium">{queue.business?.name}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <span>•</span>
+                                    <span>{queue.serviceType || 'General Service'}</span>
+                                  </div>
+                                  {queue.business?.businessType && (
+                                    <div className="flex items-center space-x-1">
+                                      <span>•</span>
+                                      <span>{queue.business.businessType}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                {queue.description && (
+                                  <p className="text-sm text-gray-500 mt-2">{queue.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Queue Statistics */}
+                            <div className="flex items-center space-x-6">
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-yellow-600">{queue.statistics?.waitingEntries || 0}</div>
+                                <div className="text-xs text-gray-600">Waiting</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-blue-600">{queue.statistics?.servingEntries || 0}</div>
+                                <div className="text-xs text-gray-600">Serving</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-green-600">{queue.statistics?.servedEntries || 0}</div>
+                                <div className="text-xs text-gray-600">Served</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-purple-600">{queue.statistics?.totalEntries || 0}</div>
+                                <div className="text-xs text-gray-600">Total</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Queue Details and Actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-6 text-sm text-gray-600">
+                              <div className="flex items-center space-x-1">
+                                <Clock className="h-4 w-4" />
+                                <span>Est. {queue.estimatedWaitTime || 0} min wait</span>
+                              </div>
+                              {queue.maxSize && (
+                                <div className="flex items-center space-x-1">
+                                  <Users className="h-4 w-4" />
+                                  <span>Max {queue.maxSize} customers</span>
+                                </div>
+                              )}
+                              <div className="flex items-center space-x-1">
+                                <Activity className="h-4 w-4" />
+                                <span>Created {new Date(queue.createdAt).toLocaleDateString()}</span>
+                              </div>
+                              {queue.statistics?.lastActivity && (
+                                <div className="flex items-center space-x-1">
+                                  <span>Last activity: {new Date(queue.statistics.lastActivity).toLocaleDateString()}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`/business-admin/queues/${queue.id}`, '_blank')}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                <Settings className="h-4 w-4 mr-2" />
+                                Manage Queue
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`/queues/${queue.id}`, '_blank')}
+                                className="text-green-600 hover:text-green-800"
+                              >
+                                <Users className="h-4 w-4 mr-2" />
+                                View Queue
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQueueToggle(queue.id, !queue.isActive)}
+                                className={queue.isActive ? "text-orange-600 hover:text-orange-800" : "text-green-600 hover:text-green-800"}
+                              >
+                                {queue.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {filteredQueues.length === 0 && allQueues.length > 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                          <p>No queues match your current filters</p>
+                          <p className="text-sm">Try adjusting your search or filter criteria</p>
+                        </div>
+                      )}
+                      
+                      {allQueues.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                          <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                          <h3 className="text-lg font-semibold mb-2">No Queues Found</h3>
+                          <p>No queues have been created in the system yet.</p>
+                          <p className="text-sm mt-1">Create your first queue to get started</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
