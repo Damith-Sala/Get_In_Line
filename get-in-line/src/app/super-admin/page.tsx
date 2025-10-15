@@ -46,12 +46,10 @@ import {
   Home, 
   Shield,
   UserCheck,
-  TrendingUp,
   Activity,
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Clock,
   Plus,
   Edit,
   Trash2,
@@ -70,53 +68,6 @@ interface SystemStats {
   totalQueueEntries: number;
   activeQueues: number;
   recentActivity: any[];
-  
-  // Enhanced analytics
-  queueAnalytics: {
-    averageWaitTime: number;
-    peakHour: number;
-    busiestDay: string;
-    queueEfficiency: number;
-    customerSatisfaction: number;
-  };
-  
-  customerFlow: {
-    totalCustomersToday: number;
-    customersServedToday: number;
-    averageServiceTime: number;
-    peakHours: number[];
-    dailyFlow: Array<{
-      hour: number;
-      entries: number;
-      exits: number;
-    }>;
-  };
-  
-  waitTimeAnalytics: {
-    averageWaitTime: number;
-    longestWaitTime: number;
-    shortestWaitTime: number;
-    waitTimeDistribution: Array<{
-      range: string;
-      count: number;
-    }>;
-    queueBottlenecks: Array<{
-      queueId: string;
-      queueName: string;
-      averageWaitTime: number;
-      currentWaiting: number;
-    }>;
-  };
-  
-  businessComparison: Array<{
-    businessId: string;
-    businessName: string;
-    totalQueues: number;
-    activeQueues: number;
-    totalEntries: number;
-    averageWaitTime: number;
-    efficiency: number;
-  }>;
 }
 
 interface User {
@@ -466,17 +417,6 @@ export default function SuperAdminDashboard() {
     return categories;
   };
 
-  const loadSystemStats = async () => {
-    try {
-      const response = await fetch('/api/super-admin/stats');
-      if (response.ok) {
-        const statsData = await response.json();
-        setStats(statsData);
-      }
-    } catch (err) {
-      console.error('Failed to load system stats:', err);
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -803,219 +743,9 @@ export default function SuperAdminDashboard() {
             </div>
           )}
 
-          {/* Enhanced Queue Analytics Section */}
-          {stats && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Avg Wait Time</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.queueAnalytics?.averageWaitTime || 0} min</div>
-                  <p className="text-xs text-muted-foreground">
-                    System-wide average
-                  </p>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Peak Hour</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.queueAnalytics?.peakHour || 0}:00</div>
-                  <p className="text-xs text-muted-foreground">
-                    Busiest time of day
-                  </p>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Customers Today</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.customerFlow?.totalCustomersToday || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Total entries today
-                  </p>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Queue Efficiency</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.queueAnalytics?.queueEfficiency || 0}%</div>
-                  <p className="text-xs text-muted-foreground">
-                    System efficiency
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Customer Flow Analytics */}
-          {stats && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Customer Flow Analytics
-                </CardTitle>
-                <CardDescription>
-                  Real-time customer movement and patterns
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {stats.customerFlow?.totalCustomersToday || 0}
-                    </div>
-                    <div className="text-sm text-gray-600">Total Customers Today</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600">
-                      {stats.customerFlow?.customersServedToday || 0}
-                    </div>
-                    <div className="text-sm text-gray-600">Customers Served</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600">
-                      {stats.customerFlow?.averageServiceTime || 0} min
-                    </div>
-                    <div className="text-sm text-gray-600">Avg Service Time</div>
-                  </div>
-                </div>
-                
-                {/* Peak Hours Chart */}
-                {stats.customerFlow?.dailyFlow && (
-                  <div className="mt-6">
-                    <h4 className="text-lg font-semibold mb-4">Peak Hours Today</h4>
-                    <div className="flex items-end space-x-2 h-32">
-                      {stats.customerFlow.dailyFlow.map((hour, index) => (
-                        <div key={index} className="flex-1 flex flex-col items-center">
-                          <div 
-                            className="bg-blue-500 rounded-t w-full mb-2"
-                            style={{ 
-                              height: `${Math.max(10, (hour.entries / Math.max(...stats.customerFlow.dailyFlow.map(h => h.entries), 1)) * 100)}px` 
-                            }}
-                          ></div>
-                          <span className="text-xs text-gray-600">{hour.hour}:00</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Wait Time Analytics */}
-          {stats && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Wait Time Analytics
-                </CardTitle>
-                <CardDescription>
-                  Queue performance and wait time insights
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600">
-                      {stats.waitTimeAnalytics?.averageWaitTime || 0} min
-                    </div>
-                    <div className="text-sm text-gray-600">Average Wait Time</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-red-600">
-                      {stats.waitTimeAnalytics?.longestWaitTime || 0} min
-                    </div>
-                    <div className="text-sm text-gray-600">Longest Wait</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {stats.waitTimeAnalytics?.shortestWaitTime || 0} min
-                    </div>
-                    <div className="text-sm text-gray-600">Shortest Wait</div>
-                  </div>
-                </div>
-                
-                {/* Queue Bottlenecks */}
-                {stats.waitTimeAnalytics?.queueBottlenecks && stats.waitTimeAnalytics.queueBottlenecks.length > 0 && (
-                  <div>
-                    <h4 className="text-lg font-semibold mb-4">Queue Bottlenecks</h4>
-                    <div className="space-y-3">
-                      {stats.waitTimeAnalytics.queueBottlenecks.slice(0, 5).map((bottleneck, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <div className="font-medium">{bottleneck.queueName}</div>
-                            <div className="text-sm text-gray-600">{bottleneck.currentWaiting} waiting</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-red-600">{bottleneck.averageWaitTime} min</div>
-                            <div className="text-sm text-gray-600">avg wait</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Business Comparison */}
-          {stats && stats.businessComparison && stats.businessComparison.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Business Performance Comparison
-                </CardTitle>
-                <CardDescription>
-                  Queue performance across all businesses
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {stats.businessComparison.slice(0, 10).map((business, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Building2 className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{business.businessName}</div>
-                          <div className="text-sm text-gray-600">
-                            {business.activeQueues}/{business.totalQueues} active queues
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-blue-600">{business.efficiency}%</div>
-                        <div className="text-sm text-gray-600">efficiency</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-green-600">{business.averageWaitTime || 0} min</div>
-                        <div className="text-sm text-gray-600">avg wait</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Management Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
@@ -1390,31 +1120,6 @@ export default function SuperAdminDashboard() {
                       </div>
                     </div>
                     
-                    {/* Queue Statistics Summary */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{filteredQueues.length}</div>
-                        <div className="text-sm text-gray-600">Filtered Queues</div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">
-                          {filteredQueues.filter(q => q.isActive).length}
-                        </div>
-                        <div className="text-sm text-gray-600">Active Queues</div>
-                      </div>
-                      <div className="bg-yellow-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-600">
-                          {filteredQueues.reduce((sum, q) => sum + (q.statistics?.waitingEntries || 0), 0)}
-                        </div>
-                        <div className="text-sm text-gray-600">Waiting Customers</div>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-600">
-                          {filteredQueues.reduce((sum, q) => sum + (q.statistics?.totalEntries || 0), 0)}
-                        </div>
-                        <div className="text-sm text-gray-600">Total Entries</div>
-                      </div>
-                    </div>
                     
                     {/* Search and Filter */}
                     <div className="flex gap-4 mb-4">
@@ -1486,49 +1191,15 @@ export default function SuperAdminDashboard() {
                               </div>
                             </div>
                             
-                            {/* Queue Statistics */}
-                            <div className="flex items-center space-x-6">
-                              <div className="text-center">
-                                <div className="text-lg font-bold text-yellow-600">{queue.statistics?.waitingEntries || 0}</div>
-                                <div className="text-xs text-gray-600">Waiting</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-lg font-bold text-blue-600">{queue.statistics?.servingEntries || 0}</div>
-                                <div className="text-xs text-gray-600">Serving</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-lg font-bold text-green-600">{queue.statistics?.servedEntries || 0}</div>
-                                <div className="text-xs text-gray-600">Served</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-lg font-bold text-purple-600">{queue.statistics?.totalEntries || 0}</div>
-                                <div className="text-xs text-gray-600">Total</div>
-                              </div>
-                            </div>
                           </div>
                           
                           {/* Queue Details and Actions */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-6 text-sm text-gray-600">
                               <div className="flex items-center space-x-1">
-                                <Clock className="h-4 w-4" />
-                                <span>Est. {queue.estimatedWaitTime || 0} min wait</span>
-                              </div>
-                              {queue.maxSize && (
-                                <div className="flex items-center space-x-1">
-                                  <Users className="h-4 w-4" />
-                                  <span>Max {queue.maxSize} customers</span>
-                                </div>
-                              )}
-                              <div className="flex items-center space-x-1">
                                 <Activity className="h-4 w-4" />
                                 <span>Created {new Date(queue.createdAt).toLocaleDateString()}</span>
                               </div>
-                              {queue.statistics?.lastActivity && (
-                                <div className="flex items-center space-x-1">
-                                  <span>Last activity: {new Date(queue.statistics.lastActivity).toLocaleDateString()}</span>
-                                </div>
-                              )}
                             </div>
                             
                             {/* Action Buttons */}
@@ -1922,28 +1593,6 @@ export default function SuperAdminDashboard() {
                     </Select>
                   </div>
 
-                  {/* Current Queue Statistics */}
-                  <div className="border-t pt-4">
-                    <h4 className="text-sm font-semibold mb-3">Current Queue Statistics</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                        <div className="text-lg font-bold text-yellow-600">{editingQueue.statistics?.waitingEntries || 0}</div>
-                        <div className="text-xs text-gray-600">Waiting</div>
-                      </div>
-                      <div className="text-center p-3 bg-blue-50 rounded-lg">
-                        <div className="text-lg font-bold text-blue-600">{editingQueue.statistics?.servingEntries || 0}</div>
-                        <div className="text-xs text-gray-600">Serving</div>
-                      </div>
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="text-lg font-bold text-green-600">{editingQueue.statistics?.servedEntries || 0}</div>
-                        <div className="text-xs text-gray-600">Served</div>
-                      </div>
-                      <div className="text-center p-3 bg-purple-50 rounded-lg">
-                        <div className="text-lg font-bold text-purple-600">{editingQueue.statistics?.totalEntries || 0}</div>
-                        <div className="text-xs text-gray-600">Total</div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
               
@@ -1959,25 +1608,7 @@ export default function SuperAdminDashboard() {
           </Dialog>
 
           {/* System Actions */}
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  System Analytics
-                </CardTitle>
-                <CardDescription>View comprehensive system analytics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/super-admin/analytics">
-                    <TrendingUp className="mr-2 h-4 w-4" />
-                    View Analytics
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-            
+          <div className="grid gap-6 md:grid-cols-2">
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
