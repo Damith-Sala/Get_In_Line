@@ -48,7 +48,18 @@ export async function GET() {
     // Get user record from custom database
     console.log('Looking up user in custom database...');
     const userRecord = await db
-      .select()
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        phone: users.phone,
+        password: users.password,
+        role: users.role,
+        businessId: users.businessId,
+        notificationPreferences: users.notificationPreferences,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      })
       .from(users)
       .where(eq(users.id, user.id))
       .limit(1);
@@ -68,6 +79,15 @@ export async function GET() {
             name: user.user_metadata?.name || user.email!.split('@')[0],
             password: 'supabase_auth_user', // Placeholder since we use Supabase auth
             role: 'business_admin', // Default role for business users
+            phone: null,
+            notificationPreferences: JSON.stringify({
+              email: true,
+              sms: false,
+              push: true,
+              queue_updates: true,
+              position_changes: true,
+              announcements: true
+            })
           })
           .returning();
 
@@ -103,6 +123,88 @@ export async function GET() {
     console.error('Error stack:', error.stack);
     return NextResponse.json(
       { error: 'Failed to fetch user data', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    console.log('PUT /api/users/me - Starting request');
+    
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options });
+          },
+          remove(name: string, options: any) {
+            cookieStore.delete({ name, ...options });
+          },
+        },
+      }
+    );
+
+    // Get the current authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { name, phone, notificationPreferences } = body;
+
+    // Validate input
+    if (!name || name.trim().length === 0) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    // Update user record
+    const updatedUser = await db
+      .update(users)
+      .set({
+        name: name.trim(),
+        phone: phone?.trim() || null,
+        notificationPreferences: notificationPreferences ? JSON.stringify(notificationPreferences) : null,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, user.id))
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        phone: users.phone,
+        password: users.password,
+        role: users.role,
+        businessId: users.businessId,
+        notificationPreferences: users.notificationPreferences,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      });
+
+    if (updatedUser.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    console.log('User profile updated successfully:', updatedUser[0].id);
+
+    return NextResponse.json({
+      message: 'Profile updated successfully',
+      user: updatedUser[0]
+    });
+
+  } catch (error: any) {
+    console.error('Update user profile error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update profile', details: error.message },
       { status: 500 }
     );
   }

@@ -15,6 +15,13 @@
       "when": 1760016464641,
       "tag": "0001_slow_champions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760537998065,
+      "tag": "0002_perpetual_sentry",
+      "breakpoints": true
     }
   ]
 }

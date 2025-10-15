@@ -22,7 +22,8 @@ import {
   Settings,
   LogOut,
   Plus,
-  List
+  List,
+  User
 } from 'lucide-react';
 
 interface Business {
@@ -369,6 +370,13 @@ export default function StaffDashboard() {
               >
                 <BarChart3 className="h-4 w-4" />
                 User Dashboard
+              </Link>
+              <Link 
+                href="/profile" 
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                Profile Settings
               </Link>
               <button 
                 onClick={handleSignOut}

@@ -29,7 +29,8 @@ import {
   Home, 
   List,
   UserCheck,
-  TrendingUp
+  TrendingUp,
+  User
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -190,6 +191,13 @@ export default function DashboardPage() {
                       </Link>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />

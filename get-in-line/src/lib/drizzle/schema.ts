@@ -5,9 +5,11 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').unique().notNull(),
   name: text('name').notNull(),
+  phone: text('phone'),
   password: text('password').notNull(), // Hashed password
   role: text('role').notNull().default('user'), // user, staff, business_admin, super_admin
   businessId: uuid('business_id'), // For staff/admins - will be set as foreign key later
+  notificationPreferences: text('notification_preferences'), // JSON string for notification settings
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
