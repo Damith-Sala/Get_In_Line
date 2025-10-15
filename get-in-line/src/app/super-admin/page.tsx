@@ -31,7 +31,8 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Clock
 } from 'lucide-react';
 
 interface SystemStats {
@@ -41,6 +42,53 @@ interface SystemStats {
   totalQueueEntries: number;
   activeQueues: number;
   recentActivity: any[];
+  
+  // Enhanced analytics
+  queueAnalytics: {
+    averageWaitTime: number;
+    peakHour: number;
+    busiestDay: string;
+    queueEfficiency: number;
+    customerSatisfaction: number;
+  };
+  
+  customerFlow: {
+    totalCustomersToday: number;
+    customersServedToday: number;
+    averageServiceTime: number;
+    peakHours: number[];
+    dailyFlow: Array<{
+      hour: number;
+      entries: number;
+      exits: number;
+    }>;
+  };
+  
+  waitTimeAnalytics: {
+    averageWaitTime: number;
+    longestWaitTime: number;
+    shortestWaitTime: number;
+    waitTimeDistribution: Array<{
+      range: string;
+      count: number;
+    }>;
+    queueBottlenecks: Array<{
+      queueId: string;
+      queueName: string;
+      averageWaitTime: number;
+      currentWaiting: number;
+    }>;
+  };
+  
+  businessComparison: Array<{
+    businessId: string;
+    businessName: string;
+    totalQueues: number;
+    activeQueues: number;
+    totalEntries: number;
+    averageWaitTime: number;
+    efficiency: number;
+  }>;
 }
 
 interface User {
@@ -61,10 +109,29 @@ interface Business {
   createdAt: string;
 }
 
+interface UserCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  count: number;
+  users: User[];
+}
+
+interface CategorizedUsers {
+  customers: UserCategory;
+  businessUsers: UserCategory;
+  platformAdmins: UserCategory;
+  suspended: UserCategory;
+  inactive: UserCategory;
+}
+
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [categorizedUsers, setCategorizedUsers] = useState<CategorizedUsers | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -110,6 +177,7 @@ export default function SuperAdminDashboard() {
         if (usersResponse.ok) {
           const allUsers = await usersResponse.json();
           setUsers(allUsers);
+          setCategorizedUsers(categorizeUsers(allUsers));
         }
         
         // Load businesses
@@ -128,6 +196,84 @@ export default function SuperAdminDashboard() {
 
     loadData();
   }, []);
+
+  const categorizeUsers = (users: User[]): CategorizedUsers => {
+    const categories: CategorizedUsers = {
+      customers: {
+        id: 'customers',
+        name: 'Customers',
+        description: 'Regular users who join queues',
+        icon: '👥',
+        color: 'blue',
+        count: 0,
+        users: []
+      },
+      businessUsers: {
+        id: 'business-users',
+        name: 'Business Users',
+        description: 'Staff and business administrators',
+        icon: '🏢',
+        color: 'green',
+        count: 0,
+        users: []
+      },
+      platformAdmins: {
+        id: 'platform-admins',
+        name: 'Platform Admins',
+        description: 'Super administrators',
+        icon: '👑',
+        color: 'purple',
+        count: 0,
+        users: []
+      },
+      suspended: {
+        id: 'suspended',
+        name: 'Suspended Users',
+        description: 'Users with restricted access',
+        icon: '⚠️',
+        color: 'orange',
+        count: 0,
+        users: []
+      },
+      inactive: {
+        id: 'inactive',
+        name: 'Inactive Users',
+        description: 'Users who haven\'t logged in recently',
+        icon: '😴',
+        color: 'gray',
+        count: 0,
+        users: []
+      }
+    };
+
+    // Categorize users
+    users.forEach(user => {
+      switch (user.role) {
+        case 'user':
+          categories.customers.users.push(user);
+          categories.customers.count++;
+          break;
+        case 'staff':
+        case 'business_admin':
+          categories.businessUsers.users.push(user);
+          categories.businessUsers.count++;
+          break;
+        case 'super_admin':
+          categories.platformAdmins.users.push(user);
+          categories.platformAdmins.count++;
+          break;
+        case 'suspended':
+          categories.suspended.users.push(user);
+          categories.suspended.count++;
+          break;
+        default:
+          categories.inactive.users.push(user);
+          categories.inactive.count++;
+      }
+    });
+
+    return categories;
+  };
 
   const loadSystemStats = async () => {
     try {
@@ -385,6 +531,220 @@ export default function SuperAdminDashboard() {
             </div>
           )}
 
+          {/* Enhanced Queue Analytics Section */}
+          {stats && (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Avg Wait Time</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.queueAnalytics?.averageWaitTime || 0} min</div>
+                  <p className="text-xs text-muted-foreground">
+                    System-wide average
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Peak Hour</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.queueAnalytics?.peakHour || 0}:00</div>
+                  <p className="text-xs text-muted-foreground">
+                    Busiest time of day
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Customers Today</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.customerFlow?.totalCustomersToday || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Total entries today
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Queue Efficiency</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.queueAnalytics?.queueEfficiency || 0}%</div>
+                  <p className="text-xs text-muted-foreground">
+                    System efficiency
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Customer Flow Analytics */}
+          {stats && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Customer Flow Analytics
+                </CardTitle>
+                <CardDescription>
+                  Real-time customer movement and patterns
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {stats.customerFlow?.totalCustomersToday || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Total Customers Today</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600">
+                      {stats.customerFlow?.customersServedToday || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Customers Served</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-600">
+                      {stats.customerFlow?.averageServiceTime || 0} min
+                    </div>
+                    <div className="text-sm text-gray-600">Avg Service Time</div>
+                  </div>
+                </div>
+                
+                {/* Peak Hours Chart */}
+                {stats.customerFlow?.dailyFlow && (
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold mb-4">Peak Hours Today</h4>
+                    <div className="flex items-end space-x-2 h-32">
+                      {stats.customerFlow.dailyFlow.map((hour, index) => (
+                        <div key={index} className="flex-1 flex flex-col items-center">
+                          <div 
+                            className="bg-blue-500 rounded-t w-full mb-2"
+                            style={{ 
+                              height: `${Math.max(10, (hour.entries / Math.max(...stats.customerFlow.dailyFlow.map(h => h.entries), 1)) * 100)}px` 
+                            }}
+                          ></div>
+                          <span className="text-xs text-gray-600">{hour.hour}:00</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Wait Time Analytics */}
+          {stats && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Wait Time Analytics
+                </CardTitle>
+                <CardDescription>
+                  Queue performance and wait time insights
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600">
+                      {stats.waitTimeAnalytics?.averageWaitTime || 0} min
+                    </div>
+                    <div className="text-sm text-gray-600">Average Wait Time</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-red-600">
+                      {stats.waitTimeAnalytics?.longestWaitTime || 0} min
+                    </div>
+                    <div className="text-sm text-gray-600">Longest Wait</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {stats.waitTimeAnalytics?.shortestWaitTime || 0} min
+                    </div>
+                    <div className="text-sm text-gray-600">Shortest Wait</div>
+                  </div>
+                </div>
+                
+                {/* Queue Bottlenecks */}
+                {stats.waitTimeAnalytics?.queueBottlenecks && stats.waitTimeAnalytics.queueBottlenecks.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold mb-4">Queue Bottlenecks</h4>
+                    <div className="space-y-3">
+                      {stats.waitTimeAnalytics.queueBottlenecks.slice(0, 5).map((bottleneck, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <div className="font-medium">{bottleneck.queueName}</div>
+                            <div className="text-sm text-gray-600">{bottleneck.currentWaiting} waiting</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-red-600">{bottleneck.averageWaitTime} min</div>
+                            <div className="text-sm text-gray-600">avg wait</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Business Comparison */}
+          {stats && stats.businessComparison && stats.businessComparison.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Business Performance Comparison
+                </CardTitle>
+                <CardDescription>
+                  Queue performance across all businesses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {stats.businessComparison.slice(0, 10).map((business, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Building2 className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{business.businessName}</div>
+                          <div className="text-sm text-gray-600">
+                            {business.activeQueues}/{business.totalQueues} active queues
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-blue-600">{business.efficiency}%</div>
+                        <div className="text-sm text-gray-600">efficiency</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-600">{business.averageWaitTime || 0} min</div>
+                        <div className="text-sm text-gray-600">avg wait</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Management Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
@@ -400,57 +760,257 @@ export default function SuperAdminDashboard() {
                     User Management
                   </CardTitle>
                   <CardDescription>
-                    Manage user accounts, roles, and permissions
+                    Manage user accounts by category
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{user.name}</p>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
-                            <div className="flex gap-2 mt-1">
-                              <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
-                                {user.role.replace('_', ' ')}
-                              </Badge>
-                              {user.businessId && (
-                                <Badge variant="outline" className="text-xs">
-                                  Business User
-                                </Badge>
-                              )}
+                  {/* Category Overview Cards */}
+                  {categorizedUsers && (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                      {Object.values(categorizedUsers).map((category) => (
+                        <Card key={category.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl mb-2">{category.icon}</div>
+                            <div className={`text-2xl font-bold text-${category.color}-600`}>
+                              {category.count}
                             </div>
-                          </div>
+                            <div className="text-sm text-gray-600">{category.name}</div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Category Tabs */}
+                  {categorizedUsers && (
+                    <Tabs defaultValue="customers" className="space-y-4">
+                      <TabsList className="grid w-full grid-cols-5">
+                        <TabsTrigger value="customers" className="flex items-center gap-2">
+                          👥 Customers ({categorizedUsers.customers.count})
+                        </TabsTrigger>
+                        <TabsTrigger value="business-users" className="flex items-center gap-2">
+                          🏢 Business ({categorizedUsers.businessUsers.count})
+                        </TabsTrigger>
+                        <TabsTrigger value="platform-admins" className="flex items-center gap-2">
+                          👑 Admins ({categorizedUsers.platformAdmins.count})
+                        </TabsTrigger>
+                        <TabsTrigger value="suspended" className="flex items-center gap-2">
+                          ⚠️ Suspended ({categorizedUsers.suspended.count})
+                        </TabsTrigger>
+                        <TabsTrigger value="inactive" className="flex items-center gap-2">
+                          😴 Inactive ({categorizedUsers.inactive.count})
+                        </TabsTrigger>
+                      </TabsList>
+
+                      {/* Customer Users Tab */}
+                      <TabsContent value="customers" className="space-y-4">
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {categorizedUsers.customers.users.map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{user.name}</p>
+                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant="secondary" className="text-xs">
+                                      Customer
+                                    </Badge>
+                                    <Badge variant="outline" className="text-xs">
+                                      Queue User
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'suspend')}
+                                  className="text-orange-600 hover:text-orange-800"
+                                >
+                                  Suspend
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'delete')}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex gap-2">
-                          {user.role !== 'super_admin' && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleUserAction(user.id, 'suspend')}
-                                className="text-orange-600 hover:text-orange-800"
-                              >
-                                Suspend
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleUserAction(user.id, 'delete')}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                Delete
-                              </Button>
-                            </>
-                          )}
+                      </TabsContent>
+
+                      {/* Business Users Tab */}
+                      <TabsContent value="business-users" className="space-y-4">
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {categorizedUsers.businessUsers.users.map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{user.name}</p>
+                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                                      {user.role.replace('_', ' ')}
+                                    </Badge>
+                                    {user.businessId && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Business User
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'suspend')}
+                                  className="text-orange-600 hover:text-orange-800"
+                                >
+                                  Suspend
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'delete')}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      </TabsContent>
+
+                      {/* Platform Admins Tab */}
+                      <TabsContent value="platform-admins" className="space-y-4">
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {categorizedUsers.platformAdmins.users.map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{user.name}</p>
+                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant="destructive" className="text-xs">
+                                      Super Admin
+                                    </Badge>
+                                    <Badge variant="outline" className="text-xs">
+                                      Platform Owner
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  Protected
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </TabsContent>
+
+                      {/* Suspended Users Tab */}
+                      <TabsContent value="suspended" className="space-y-4">
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {categorizedUsers.suspended.users.map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-orange-50">
+                              <div className="flex items-center space-x-4">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{user.name}</p>
+                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant="destructive" className="text-xs">
+                                      Suspended
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'activate')}
+                                  className="text-green-600 hover:text-green-800"
+                                >
+                                  Activate
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'delete')}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </TabsContent>
+
+                      {/* Inactive Users Tab */}
+                      <TabsContent value="inactive" className="space-y-4">
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {categorizedUsers.inactive.users.map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                              <div className="flex items-center space-x-4">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{user.name}</p>
+                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant="secondary" className="text-xs">
+                                      Inactive
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'suspend')}
+                                  className="text-orange-600 hover:text-orange-800"
+                                >
+                                  Suspend
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUserAction(user.id, 'delete')}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

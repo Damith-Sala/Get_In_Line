@@ -78,6 +78,15 @@ export async function PATCH(
           .where(eq(users.id, userId));
         break;
 
+      case 'activate':
+        // Reactivate suspended users - restore to their previous role
+        // For now, we'll set them back to 'user' role
+        await db
+          .update(users)
+          .set({ role: 'user' })
+          .where(eq(users.id, userId));
+        break;
+
       case 'delete':
         await db
           .delete(users)
