@@ -19,6 +19,25 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { 
   Users, 
   Building2, 
   BarChart3, 
@@ -33,7 +52,9 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Plus
+  Plus,
+  Edit,
+  Trash2
 } from 'lucide-react';
 
 interface SystemStats {
@@ -138,6 +159,8 @@ export default function SuperAdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBusiness, setSelectedBusiness] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [editingQueue, setEditingQueue] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -416,6 +439,62 @@ export default function SuperAdminDashboard() {
       }
     } catch (err: any) {
       alert(`Failed to ${isActive ? 'activate' : 'deactivate'} queue: ${err.message}`);
+    }
+  };
+
+  const handleEditQueue = (queue: any) => {
+    setEditingQueue(queue);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveQueue = async () => {
+    try {
+      const response = await fetch(`/api/super-admin/queues/${editingQueue.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingQueue.name,
+          description: editingQueue.description,
+          serviceType: editingQueue.serviceType,
+          maxSize: editingQueue.maxSize,
+          estimatedWaitTime: editingQueue.estimatedWaitTime,
+          isActive: editingQueue.isActive,
+          businessId: editingQueue.business?.id
+        })
+      });
+
+      if (response.ok) {
+        alert('Queue updated successfully');
+        setIsEditModalOpen(false);
+        // Refresh the queue list
+        window.location.reload();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to update queue: ${errorData.error}`);
+      }
+    } catch (err: any) {
+      alert(`Failed to update queue: ${err.message}`);
+    }
+  };
+
+  const handleDeleteQueue = async (queueId: string) => {
+    if (confirm('Are you sure you want to delete this queue? This action cannot be undone.')) {
+      try {
+        const response = await fetch(`/api/super-admin/queues/${queueId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          alert('Queue deleted successfully');
+          // Remove from local state
+          setAllQueues(prevQueues => prevQueues.filter(q => q.id !== queueId));
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to delete queue: ${errorData.error}`);
+        }
+      } catch (err: any) {
+        alert(`Failed to delete queue: ${err.message}`);
+      }
     }
   };
 
@@ -1332,20 +1411,38 @@ export default function SuperAdminDashboard() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => window.open(`/business-admin/queues/${queue.id}`, '_blank')}
+                                onClick={() => handleEditQueue(queue)}
                                 className="text-blue-600 hover:text-blue-800"
                               >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteQueue(queue.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`/business-admin/queues/${queue.id}`, '_blank')}
+                                className="text-green-600 hover:text-green-800"
+                              >
                                 <Settings className="h-4 w-4 mr-2" />
-                                Manage Queue
+                                Manage
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => window.open(`/queues/${queue.id}`, '_blank')}
-                                className="text-green-600 hover:text-green-800"
+                                className="text-purple-600 hover:text-purple-800"
                               >
                                 <Users className="h-4 w-4 mr-2" />
-                                View Queue
+                                View
                               </Button>
                               <Button
                                 variant="outline"
@@ -1382,6 +1479,147 @@ export default function SuperAdminDashboard() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Queue Edit Modal */}
+          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Queue: {editingQueue?.name}</DialogTitle>
+                <DialogDescription>
+                  Update queue settings and configuration. Changes will be applied immediately.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {editingQueue && (
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="queue-name">Queue Name *</Label>
+                      <Input
+                        id="queue-name"
+                        value={editingQueue.name || ''}
+                        onChange={(e) => setEditingQueue({...editingQueue, name: e.target.value})}
+                        placeholder="Enter queue name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="service-type">Service Type</Label>
+                      <Input
+                        id="service-type"
+                        value={editingQueue.serviceType || ''}
+                        onChange={(e) => setEditingQueue({...editingQueue, serviceType: e.target.value})}
+                        placeholder="e.g., Customer Service, Technical Support"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={editingQueue.description || ''}
+                      onChange={(e) => setEditingQueue({...editingQueue, description: e.target.value})}
+                      placeholder="Describe what this queue is for..."
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="max-size">Max Size</Label>
+                      <Input
+                        id="max-size"
+                        type="number"
+                        min="1"
+                        value={editingQueue.maxSize || ''}
+                        onChange={(e) => setEditingQueue({...editingQueue, maxSize: e.target.value ? parseInt(e.target.value) : null})}
+                        placeholder="No limit"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="wait-time">Est. Wait Time (min)</Label>
+                      <Input
+                        id="wait-time"
+                        type="number"
+                        min="0"
+                        value={editingQueue.estimatedWaitTime || ''}
+                        onChange={(e) => setEditingQueue({...editingQueue, estimatedWaitTime: e.target.value ? parseInt(e.target.value) : null})}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 pt-6">
+                      <Checkbox
+                        id="is-active"
+                        checked={editingQueue.isActive || false}
+                        onCheckedChange={(checked) => setEditingQueue({...editingQueue, isActive: checked})}
+                      />
+                      <Label htmlFor="is-active">Queue is Active</Label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="business">Business Assignment</Label>
+                    <Select
+                      value={editingQueue.business?.id || ''}
+                      onValueChange={(value) => {
+                        const business = businesses.find(b => b.id === value);
+                        setEditingQueue({...editingQueue, business: business});
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select business" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {businesses.map((business) => (
+                          <SelectItem key={business.id} value={business.id}>
+                            <div className="flex items-center space-x-2">
+                              <Building2 className="h-4 w-4" />
+                              <span>{business.name}</span>
+                              <Badge variant={business.isActive ? "default" : "secondary"} className="text-xs">
+                                {business.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Current Queue Statistics */}
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-3">Current Queue Statistics</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                        <div className="text-lg font-bold text-yellow-600">{editingQueue.statistics?.waitingEntries || 0}</div>
+                        <div className="text-xs text-gray-600">Waiting</div>
+                      </div>
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-lg font-bold text-blue-600">{editingQueue.statistics?.servingEntries || 0}</div>
+                        <div className="text-xs text-gray-600">Serving</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-lg font-bold text-green-600">{editingQueue.statistics?.servedEntries || 0}</div>
+                        <div className="text-xs text-gray-600">Served</div>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 rounded-lg">
+                        <div className="text-lg font-bold text-purple-600">{editingQueue.statistics?.totalEntries || 0}</div>
+                        <div className="text-xs text-gray-600">Total</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveQueue} className="bg-blue-600 hover:bg-blue-700">
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* System Actions */}
           <div className="grid gap-6 md:grid-cols-3">
