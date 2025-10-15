@@ -173,61 +173,93 @@ export default function StaffDashboard() {
 
   // Real-time subscription for queue updates
   useEffect(() => {
-    if (!business?.id || !realtimeSupabase || queues.length === 0) return
+    if (!business?.id || !realtimeSupabase) return
 
-    const queueIds = queues.map(q => q.id).join(',')
-    
-    const channel = realtimeSupabase
-      .channel('staff-dashboard')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'queue_entries',
-          filter: `queue_id=in.(${queueIds})`
-        },
-        (payload) => {
-          console.log('Queue entry change detected:', payload)
-          // Refresh queue data when entries change
-          if (business?.id) {
-            // Refresh queues
-            fetch(`/api/businesses/${business.id}/queues`)
-              .then(res => res.ok ? res.json() : null)
-              .then(data => data && setQueues(data))
-              .catch(console.error)
-            
-            // Refresh queue entries if viewing a specific queue
-            if (selectedQueue) {
-              loadQueueEntries(selectedQueue.id)
+    let isMounted = true
+    let channel: any = null
+
+    const setupSubscription = async () => {
+      // Get current queues for subscription
+      try {
+        const response = await fetch(`/api/businesses/${business.id}/queues`)
+        if (!response.ok || !isMounted) return
+        
+        const queuesData = await response.json()
+        if (!isMounted || !queuesData || queuesData.length === 0) return
+
+        const queueIds = queuesData.map((q: any) => q.id).join(',')
+        
+        channel = realtimeSupabase
+          .channel('staff-dashboard')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'queue_entries',
+              filter: `queue_id=in.(${queueIds})`
+            },
+            (payload) => {
+              if (!isMounted) return
+              
+              console.log('Queue entry change detected:', payload)
+              // Refresh queue data when entries change
+              if (business?.id) {
+                // Refresh queues
+                fetch(`/api/businesses/${business.id}/queues`)
+                  .then(res => res.ok ? res.json() : null)
+                  .then(data => {
+                    if (isMounted && data) {
+                      setQueues(data)
+                    }
+                  })
+                  .catch(console.error)
+                
+                // Refresh queue entries if viewing a specific queue
+                if (selectedQueue) {
+                  loadQueueEntries(selectedQueue.id)
+                }
+              }
             }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'queues',
-          filter: `business_id=eq.${business.id}`
-        },
-        (payload) => {
-          console.log('Queue status change detected:', payload)
-          // Update specific queue in the list
-          setQueues(prev => prev.map(q => 
-            q.id === payload.new.id ? { ...q, ...payload.new } : q
-          ))
-        }
-      )
-      .subscribe((status) => {
-        console.log('Staff dashboard subscription status:', status)
-      })
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'queues',
+              filter: `business_id=eq.${business.id}`
+            },
+            (payload) => {
+              if (!isMounted) return
+              
+              console.log('Queue status change detected:', payload)
+              // Update specific queue in the list
+              setQueues(prev => prev.map(q => 
+                q.id === payload.new.id ? { ...q, ...payload.new } : q
+              ))
+            }
+          )
+          .subscribe((status) => {
+            if (isMounted) {
+              console.log('Staff dashboard subscription status:', status)
+            }
+          })
+      } catch (error) {
+        console.error('Error setting up realtime subscription:', error)
+      }
+    }
+
+    setupSubscription()
 
     return () => {
-      channel.unsubscribe()
+      isMounted = false
+      if (channel) {
+        channel.unsubscribe()
+        channel = null
+      }
     }
-  }, [business?.id, queues, selectedQueue, realtimeSupabase])
+  }, [business?.id, realtimeSupabase]) // Removed queues and selectedQueue from dependencies
 
   const handleSignOut = async () => {
     try {

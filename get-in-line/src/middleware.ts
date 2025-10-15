@@ -66,5 +66,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/business-admin/:path*', '/staff-dashboard/:path*', '/super-admin/:path*', '/login', '/signup']
+  matcher: ['/dashboard/:path*', '/business-admin/:path*', '/staff-dashboard/:path*', '/super-admin/:path*', '/profile/:path*', '/login', '/signup']
 }
