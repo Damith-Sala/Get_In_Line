@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { queues, businesses, queueEntries, users } from '@/lib/drizzle/schema';
+import { queues, businesses, queueEntries, users, notifications, queueAnalytics } from '@/lib/drizzle/schema';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { eq, sql } from 'drizzle-orm';
@@ -218,13 +218,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
     }
 
-    // Delete the queue (this will cascade delete queue entries)
-    await db
-      .delete(queues)
-      .where(eq(queues.id, queueId));
+    // Delete related records first (CASCADE DELETE manually)
+    await db.delete(queueEntries).where(eq(queueEntries.queueId, queueId));
+    await db.delete(notifications).where(eq(notifications.queueId, queueId));
+    await db.delete(queueAnalytics).where(eq(queueAnalytics.queueId, queueId));
+
+    // Now delete the queue
+    await db.delete(queues).where(eq(queues.id, queueId));
 
     return NextResponse.json({
-      message: 'Queue deleted successfully'
+      message: 'Queue and all related data deleted successfully'
     });
 
   } catch (error) {
