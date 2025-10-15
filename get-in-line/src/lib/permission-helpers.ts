@@ -27,18 +27,18 @@ export interface StaffPermissions {
 }
 
 export const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
-  canCreateQueues: false,
-  canEditQueues: false,
-  canDeleteQueues: false,
-  canManageQueueOperations: true, // Basic staff can manage operations
+  canCreateQueues: true,
+  canEditQueues: true,
+  canDeleteQueues: true,
+  canManageQueueOperations: true, // Staff can manage operations
   canManageStaff: false,
   canViewStaff: true,
-  canViewAnalytics: false,
+  canViewAnalytics: true,
   canExportData: false,
   canEditBusinessSettings: false,
   canManageBranches: false,
-  canSendNotifications: false,
-  canManageNotifications: false,
+  canSendNotifications: true,
+  canManageNotifications: true,
 };
 
 export const MANAGER_PERMISSIONS: StaffPermissions = {

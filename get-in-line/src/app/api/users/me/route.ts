@@ -78,7 +78,7 @@ export async function GET() {
             email: user.email!,
             name: user.user_metadata?.name || user.email!.split('@')[0],
             password: 'supabase_auth_user', // Placeholder since we use Supabase auth
-            role: 'business_admin', // Default role for business users
+            role: 'user', // Default role for regular users
             phone: null,
             notificationPreferences: JSON.stringify({
               email: true,
@@ -95,7 +95,7 @@ export async function GET() {
         
         return NextResponse.json({
           user: newUser[0],
-          role: newUser[0].role || 'business_admin',
+          role: newUser[0].role || 'user',
           businessId: null // Will be set when they create/join a business
         });
       } catch (createError: any) {

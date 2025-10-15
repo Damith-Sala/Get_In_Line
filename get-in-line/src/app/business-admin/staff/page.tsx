@@ -43,6 +43,10 @@ export default function BusinessAdminStaffPage() {
   const [loading, setLoading] = useState(true);
   const [businessId, setBusinessId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [newStaffEmail, setNewStaffEmail] = useState('');
+  const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffRole, setNewStaffRole] = useState('staff');
 
   useEffect(() => {
     async function loadData() {
@@ -110,6 +114,82 @@ export default function BusinessAdminStaffPage() {
     } catch (error) {
       console.error('Failed to update permissions:', error);
       setError(error instanceof Error ? error.message : 'Failed to update permissions');
+    }
+  };
+
+  const handleAddStaff = async () => {
+    if (!businessId || !newStaffEmail || !newStaffName) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setError(null);
+      
+      // First, create the user account via signup
+      const signupResponse = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newStaffEmail,
+          password: 'temp_password_123', // Temporary password
+          name: newStaffName
+        })
+      });
+
+      if (!signupResponse.ok) {
+        const errorData = await signupResponse.json();
+        throw new Error(errorData.error || 'Failed to create user account');
+      }
+
+      const signupData = await signupResponse.json();
+      const userId = signupData.user.id;
+
+      // Then add them as staff to the business
+      const staffResponse = await fetch(`/api/businesses/${businessId}/staff`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          role: newStaffRole,
+          permissions: JSON.stringify({
+            canCreateQueues: true,
+            canEditQueues: true,
+            canDeleteQueues: true,
+            canManageQueueOperations: true,
+            canViewAnalytics: true,
+            canManageStaff: false,
+            canSendNotifications: true,
+            canViewStaff: true,
+            canExportData: false,
+            canEditBusinessSettings: false,
+            canManageBranches: false,
+            canManageNotifications: true,
+          })
+        })
+      });
+
+      if (!staffResponse.ok) {
+        const errorData = await staffResponse.json();
+        throw new Error(errorData.error || 'Failed to add staff member');
+      }
+
+      // Refresh staff list
+      const updatedStaffResponse = await fetch(`/api/businesses/${businessId}/staff`);
+      if (updatedStaffResponse.ok) {
+        const staffData = await updatedStaffResponse.json();
+        setStaff(staffData);
+      }
+
+      // Reset form and close modal
+      setNewStaffEmail('');
+      setNewStaffName('');
+      setNewStaffRole('staff');
+      setShowAddStaffModal(false);
+      
+    } catch (error) {
+      console.error('Failed to add staff member:', error);
+      setError(error instanceof Error ? error.message : 'Failed to add staff member');
     }
   };
 
@@ -191,10 +271,21 @@ export default function BusinessAdminStaffPage() {
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-          <p className="text-gray-600 mt-2">
-            Manage your staff members and their permissions
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
+              <p className="text-gray-600 mt-2">
+                Manage your staff members and their permissions
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowAddStaffModal(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Add Staff Member
+            </Button>
+          </div>
         </div>
 
         {/* Staff List */}
@@ -430,6 +521,93 @@ export default function BusinessAdminStaffPage() {
                       setEditingStaff(null);
                       setError(null);
                     }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Add Staff Modal */}
+        {showAddStaffModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Add New Staff Member
+                </CardTitle>
+                <p className="text-gray-600">Create a new staff account for your business</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-red-600 text-sm">{error}</p>
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="staffName">Full Name *</Label>
+                  <Input
+                    id="staffName"
+                    value={newStaffName}
+                    onChange={(e) => setNewStaffName(e.target.value)}
+                    placeholder="Enter staff member's full name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="staffEmail">Email Address *</Label>
+                  <Input
+                    id="staffEmail"
+                    type="email"
+                    value={newStaffEmail}
+                    onChange={(e) => setNewStaffEmail(e.target.value)}
+                    placeholder="Enter staff member's email"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="staffRole">Role</Label>
+                  <Select value={newStaffRole} onValueChange={setNewStaffRole}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="staff">Staff Member</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Note:</strong> A temporary password will be set. The staff member should change it on first login.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={handleAddStaff}
+                    className="bg-green-600 hover:bg-green-700 flex-1"
+                  >
+                    Add Staff Member
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowAddStaffModal(false);
+                      setError(null);
+                      setNewStaffEmail('');
+                      setNewStaffName('');
+                      setNewStaffRole('staff');
+                    }}
+                    className="flex-1"
                   >
                     Cancel
                   </Button>
