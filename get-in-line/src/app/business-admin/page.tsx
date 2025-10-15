@@ -94,6 +94,15 @@ export default function BusinessAdminPage() {
 
   const supabase = createClient();
 
+  // Add role-based access control
+  useEffect(() => {
+    if (user && !['business_admin', 'staff', 'super_admin'].includes(user.role)) {
+      // Redirect regular users away from business admin
+      window.location.href = '/dashboard';
+      return;
+    }
+  }, [user]);
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let isMounted = true; // Add this guard

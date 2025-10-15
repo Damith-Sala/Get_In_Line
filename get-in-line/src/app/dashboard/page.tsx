@@ -140,10 +140,16 @@ export default function DashboardPage() {
                   <UserCheck className="h-4 w-4 mr-2 inline" />
                   My Queues
                 </Link>
-                {userRole !== 'user' && (
+                {userRole === 'business_admin' && (
                   <Link href="/business-admin" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
                     <BarChart3 className="h-4 w-4 mr-2 inline" />
                     Business Admin
+                  </Link>
+                )}
+                {userRole === 'staff' && (
+                  <Link href="/staff-dashboard" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                    <BarChart3 className="h-4 w-4 mr-2 inline" />
+                    Staff Dashboard
                   </Link>
                 )}
               </nav>
@@ -221,14 +227,9 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Dashboard Content */}
-          <Tabs defaultValue={userRole === 'user' ? 'customer' : 'business'} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="customer">Customer View</TabsTrigger>
-              <TabsTrigger value="business">Business View</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="customer" className="space-y-6">
+          {/* Dashboard Content - Only show customer view for regular users */}
+          {userRole === 'user' ? (
+            <div className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {/* My Queue Entries */}
                 <Card>
@@ -284,60 +285,125 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
-            </TabsContent>
+            </div>
+          ) : (
+            <Tabs defaultValue="business" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="customer">Customer View</TabsTrigger>
+                <TabsTrigger value="business">Business View</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="business" className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {/* Your Queues */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Your Queues</CardTitle>
-                    <List className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-xs text-muted-foreground">
-                      No queues created yet
-                    </p>
-                    <Button asChild className="mt-4 w-full">
-                      <Link href="/queues/create">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create New Queue
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
+              <TabsContent value="customer" className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {/* My Queue Entries */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">My Queue Entries</CardTitle>
+                      <UserCheck className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">0</div>
+                      <p className="text-xs text-muted-foreground">
+                        You haven't joined any queues yet
+                      </p>
+                      <Button asChild className="mt-4 w-full">
+                        <Link href="/queues">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Browse Available Queues
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-                {/* Active Customers */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-xs text-muted-foreground">
-                      No active customers in queue
-                    </p>
-                  </CardContent>
-                </Card>
+                  {/* Quick Actions */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Button asChild variant="outline" className="w-full justify-start">
+                        <Link href="/queues">
+                          <List className="mr-2 h-4 w-4" />
+                          View All Queues
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" className="w-full justify-start">
+                        <Link href="/my-queues">
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          My Queue Entries
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-                {/* Analytics */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Analytics</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-6">
-                      <BarChart3 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No data available</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
+                  {/* Recent Activity */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-6">
+                        <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">No recent activity</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="business" className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {/* Your Queues */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Your Queues</CardTitle>
+                      <List className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">0</div>
+                      <p className="text-xs text-muted-foreground">
+                        No queues created yet
+                      </p>
+                      <Button asChild className="mt-4 w-full">
+                        <Link href="/queues/create">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create New Queue
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Active Customers */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">0</div>
+                      <p className="text-xs text-muted-foreground">
+                        No active customers in queue
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Analytics */}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Analytics</CardTitle>
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-6">
+                        <BarChart3 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">No data available</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </main>
     </div>

@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Users, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react';
+import { Users, Clock, CheckCircle, AlertCircle, Plus, Home } from 'lucide-react';
 
 interface Queue {
   id: string;
@@ -249,9 +249,9 @@ export default function QueuesPage() {
             </CardHeader>
             <CardContent>
               <Button asChild size="lg">
-                <Link href="/queues/create">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create the First Queue
+                <Link href="/dashboard">
+                  <Home className="w-4 h-4 mr-2" />
+                  Go to Dashboard
                 </Link>
               </Button>
             </CardContent>

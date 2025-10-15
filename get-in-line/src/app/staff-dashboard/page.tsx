@@ -85,6 +85,15 @@ export default function StaffDashboard() {
   const supabase = createClient();
   const { supabase: realtimeSupabase, isConnected } = useSupabaseRealtime();
 
+  // Add role-based access control
+  useEffect(() => {
+    if (user && !['staff', 'business_admin', 'super_admin'].includes(user.role)) {
+      // Redirect non-staff users away from staff dashboard
+      window.location.href = '/dashboard';
+      return;
+    }
+  }, [user]);
+
   useEffect(() => {
     async function loadData() {
       try {
