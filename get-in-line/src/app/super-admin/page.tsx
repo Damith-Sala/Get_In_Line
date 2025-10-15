@@ -54,7 +54,13 @@ import {
   Clock,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  User,
+  Phone,
+  Mail,
+  Bell,
+  Save,
+  Loader2
 } from 'lucide-react';
 
 interface SystemStats {
@@ -149,6 +155,26 @@ interface CategorizedUsers {
   inactive: UserCategory;
 }
 
+interface AdminProfile {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  role: string;
+  notificationPreferences?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface NotificationPreferences {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+  queue_updates: boolean;
+  position_changes: boolean;
+  announcements: boolean;
+}
+
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -164,6 +190,25 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+
+  // Profile management state
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+
+  // Form state for profile
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileNotificationPrefs, setProfileNotificationPrefs] = useState<NotificationPreferences>({
+    email: true,
+    sms: false,
+    push: true,
+    queue_updates: true,
+    position_changes: true,
+    announcements: true
+  });
 
   const supabase = createClient();
 
@@ -223,6 +268,9 @@ export default function SuperAdminDashboard() {
           setAllQueues(queuesData.queues || []);
         }
 
+        // Load admin profile
+        await fetchAdminProfile();
+
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -232,6 +280,82 @@ export default function SuperAdminDashboard() {
 
     loadData();
   }, []);
+
+  // Profile management functions
+  const fetchAdminProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const response = await fetch('/api/users/me');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch admin profile');
+      }
+      
+      const data = await response.json();
+      setAdminProfile(data.user);
+      setProfileName(data.user.name || '');
+      setProfilePhone(data.user.phone || '');
+      
+      // Parse notification preferences
+      if (data.user.notificationPreferences) {
+        try {
+          const prefs = JSON.parse(data.user.notificationPreferences);
+          setProfileNotificationPrefs(prefs);
+        } catch (e) {
+          console.error('Error parsing notification preferences:', e);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching admin profile:', error);
+      setProfileError('Failed to load profile data');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    try {
+      setProfileSaving(true);
+      setProfileError(null);
+      setProfileSuccess(null);
+
+      const response = await fetch('/api/users/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: profileName,
+          phone: profilePhone,
+          notificationPreferences: profileNotificationPrefs
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      const data = await response.json();
+      setAdminProfile(data.user);
+      setProfileSuccess('Profile updated successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setProfileSuccess(null), 3000);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setProfileError(error instanceof Error ? error.message : 'Failed to update profile');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleProfileNotificationChange = (key: keyof NotificationPreferences, value: boolean) => {
+    setProfileNotificationPrefs(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
   // Filter queues based on search and filter criteria
   useEffect(() => {
@@ -895,10 +1019,11 @@ export default function SuperAdminDashboard() {
 
           {/* Management Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="users">User Management</TabsTrigger>
               <TabsTrigger value="businesses">Business Management</TabsTrigger>
               <TabsTrigger value="queues">Queue Management</TabsTrigger>
+              <TabsTrigger value="profile">Profile Management</TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
@@ -1475,6 +1600,218 @@ export default function SuperAdminDashboard() {
                       )}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="profile" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Admin Profile Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your personal information and notification preferences.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {profileLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span>Loading profile...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {profileError && (
+                        <Alert className="border-red-200 bg-red-50">
+                          <AlertDescription className="text-red-800">
+                            {profileError}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {profileSuccess && (
+                        <Alert className="border-green-200 bg-green-50">
+                          <AlertDescription className="text-green-800">
+                            {profileSuccess}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {/* Personal Information */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          Personal Information
+                        </h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-name">Full Name</Label>
+                            <Input
+                              id="admin-name"
+                              type="text"
+                              value={profileName}
+                              onChange={(e) => setProfileName(e.target.value)}
+                              placeholder="Enter your full name"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-phone" className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              Phone Number
+                            </Label>
+                            <Input
+                              id="admin-phone"
+                              type="tel"
+                              value={profilePhone}
+                              onChange={(e) => setProfilePhone(e.target.value)}
+                              placeholder="Enter your phone number"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="admin-email" className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            Email Address
+                          </Label>
+                          <Input
+                            id="admin-email"
+                            type="email"
+                            value={adminProfile?.email || ''}
+                            disabled
+                            className="bg-gray-50"
+                          />
+                          <p className="text-sm text-gray-500">
+                            Email cannot be changed. Contact support if you need to update your email.
+                          </p>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Notification Preferences */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                          <Bell className="h-5 w-5" />
+                          Notification Preferences
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-3">Notification Methods</h4>
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="admin-email-notifications"
+                                  checked={profileNotificationPrefs.email}
+                                  onCheckedChange={(checked) => 
+                                    handleProfileNotificationChange('email', checked as boolean)
+                                  }
+                                />
+                                <Label htmlFor="admin-email-notifications" className="flex items-center gap-2">
+                                  <Mail className="h-4 w-4" />
+                                  Email notifications
+                                </Label>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="admin-sms-notifications"
+                                  checked={profileNotificationPrefs.sms}
+                                  onCheckedChange={(checked) => 
+                                    handleProfileNotificationChange('sms', checked as boolean)
+                                  }
+                                />
+                                <Label htmlFor="admin-sms-notifications" className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4" />
+                                  SMS notifications
+                                </Label>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="admin-push-notifications"
+                                  checked={profileNotificationPrefs.push}
+                                  onCheckedChange={(checked) => 
+                                    handleProfileNotificationChange('push', checked as boolean)
+                                  }
+                                />
+                                <Label htmlFor="admin-push-notifications">
+                                  Push notifications
+                                </Label>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="font-medium mb-3">Notification Types</h4>
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="admin-queue-updates"
+                                  checked={profileNotificationPrefs.queue_updates}
+                                  onCheckedChange={(checked) => 
+                                    handleProfileNotificationChange('queue_updates', checked as boolean)
+                                  }
+                                />
+                                <Label htmlFor="admin-queue-updates">
+                                  Queue updates and changes
+                                </Label>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="admin-position-changes"
+                                  checked={profileNotificationPrefs.position_changes}
+                                  onCheckedChange={(checked) => 
+                                    handleProfileNotificationChange('position_changes', checked as boolean)
+                                  }
+                                />
+                                <Label htmlFor="admin-position-changes">
+                                  Position changes in queues
+                                </Label>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="admin-announcements"
+                                  checked={profileNotificationPrefs.announcements}
+                                  onCheckedChange={(checked) => 
+                                    handleProfileNotificationChange('announcements', checked as boolean)
+                                  }
+                                />
+                                <Label htmlFor="admin-announcements">
+                                  System announcements
+                                </Label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Save Button */}
+                      <div className="flex justify-end">
+                        <Button 
+                          onClick={handleProfileSave} 
+                          disabled={profileSaving}
+                          className="flex items-center gap-2"
+                        >
+                          {profileSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          {profileSaving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
