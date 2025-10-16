@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login</title>
+</head>
+<body>
+    <h1>Testing Frontend Login</h1>
+    <p>If you can see this, the frontend is working.</p>
+    
+    <h2>Test Business Admin Login</h2>
+    <p>Try logging in with these business admin accounts:</p>
+    <ul>
+        <li><strong>cikigo7070@bdnets.com</strong> - Owner of "Dam_Business_new_admin"</li>
+        <li><strong>pixori8617@arqsis.com</strong> - Owner of "Dam_Business1"</li>
+        <li><strong>rakoc67675@aiwanlab.com</strong> - Owner of "b1"</li>
+        <li><strong>kamalpereranew2025@gmail.com</strong> - Owner of "b1_test"</li>
+    </ul>
+    
+    <h2>Steps to Test:</h2>
+    <ol>
+        <li>Go to <a href="http://localhost:3000/login" target="_blank">http://localhost:3000/login</a></li>
+        <li>Open browser Developer Tools (F12)</li>
+        <li>Go to Console tab</li>
+        <li>Login with one of the business admin accounts above</li>
+        <li>Check console for any error messages</li>
+        <li>See if it redirects to /business-admin or /dashboard</li>
+    </ol>
+    
+    <h2>Expected Behavior:</h2>
+    <ul>
+        <li>✅ Should redirect to <code>/business-admin</code> after login</li>
+        <li>✅ Should NOT redirect to <code>/dashboard</code></li>
+        <li>✅ Console should show: "Business admin page: Setting user role to: business_admin"</li>
+    </ul>
+    
+    <h2>If Still Not Working:</h2>
+    <p>Check the browser console for error messages and let me know what you see.</p>
+    
+    <script>
+        // Test if we can reach the login page
+        fetch('http://localhost:3000/login')
+            .then(response => {
+                if (response.ok) {
+                    document.body.innerHTML += '<p style="color: green;">✅ Login page is accessible</p>';
+                } else {
+                    document.body.innerHTML += '<p style="color: red;">❌ Login page returned: ' + response.status + '</p>';
+                }
+            })
+            .catch(error => {
+                document.body.innerHTML += '<p style="color: red;">❌ Cannot reach login page: ' + error.message + '</p>';
+            });
+    </script>
+</body>
+</html>

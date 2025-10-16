@@ -69,6 +69,7 @@ export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [todayStats, setTodayStats] = useState({
     customersServed: 0,
     activeQueues: 0,
@@ -85,14 +86,15 @@ export default function StaffDashboard() {
   const supabase = createClient();
   const { supabase: realtimeSupabase, isConnected } = useSupabaseRealtime();
 
-  // Add role-based access control
+  // Add role-based access control - check after user role is loaded
   useEffect(() => {
-    if (user && !['staff', 'business_admin', 'super_admin'].includes(user.role)) {
-      // Redirect non-staff users away from staff dashboard
+    // Only redirect if we have a role and it's not allowed
+    if (userRole && userRole !== 'user' && !['staff', 'business_admin', 'super_admin'].includes(userRole)) {
+      console.log('Staff dashboard: Redirecting user with role:', userRole);
       window.location.href = '/dashboard';
       return;
     }
-  }, [user]);
+  }, [userRole]);
 
   useEffect(() => {
     async function loadData() {
@@ -117,6 +119,10 @@ export default function StaffDashboard() {
         }
         
         const userData = await usersResponse.json();
+        
+        // Set user role for access control
+        console.log('Staff dashboard: Setting user role to:', userData.role);
+        setUserRole(userData.role || 'user');
         
         if (!userData.businessId) {
           setError('No business associated with your account');

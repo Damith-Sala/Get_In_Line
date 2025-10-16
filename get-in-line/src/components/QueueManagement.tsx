@@ -57,7 +57,7 @@ interface QueueManagementProps {
   queues: Queue[];
   onQueuesChange: (queues: Queue[]) => void;
   onQueueSelect: (queue: Queue) => void;
-  userPermissions: {
+  userPermissions?: {
     canCreateQueues: boolean;
     canEditQueues: boolean;
     canDeleteQueues: boolean;
@@ -69,7 +69,11 @@ export default function QueueManagement({
   queues, 
   onQueuesChange, 
   onQueueSelect,
-  userPermissions 
+  userPermissions = {
+    canCreateQueues: false,
+    canEditQueues: false,
+    canDeleteQueues: false
+  }
 }: QueueManagementProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);

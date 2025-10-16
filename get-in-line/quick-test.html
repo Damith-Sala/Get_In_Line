@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Staff Dashboard Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .button { padding: 15px 30px; margin: 10px; font-size: 16px; cursor: pointer; }
+        .login { background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        .super-admin { background-color: #28a745; color: white; border: none; border-radius: 5px; }
+        .test { background-color: #ffc107; color: black; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Quick Staff Dashboard Access Test</h1>
+    
+    <p><strong>The issue is simple: You need to log in first!</strong></p>
+    
+    <h2>Step 1: Log In (Choose One)</h2>
+    <button class="button login" onclick="window.open('/login', '_blank')">
+        🔑 Regular Login
+    </button>
+    
+    <button class="button super-admin" onclick="window.open('/super-admin/login', '_blank')">
+        🔧 Super Admin Login (Quick Access)
+    </button>
+    
+    <h2>Step 2: Test Staff Dashboard</h2>
+    <button class="button test" onclick="testStaffDashboard()">
+        🧪 Test Staff Dashboard Access
+    </button>
+    
+    <div id="result" style="margin-top: 20px; padding: 15px; border-radius: 5px;"></div>
+    
+    <h2>Super Admin Credentials (if needed):</h2>
+    <p><strong>Email:</strong> ketov50192@arqsis.com</p>
+    <p><strong>Password:</strong> damith2000</p>
+    
+    <script>
+        async function testStaffDashboard() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/staff-dashboard');
+                if (response.ok) {
+                    result.style.backgroundColor = '#d4edda';
+                    result.innerHTML = '✅ SUCCESS! Staff dashboard is accessible. You should be able to navigate there now.';
+                } else {
+                    result.style.backgroundColor = '#f8d7da';
+                    result.innerHTML = `❌ Still not working. Status: ${response.status}. Make sure you're logged in first.`;
+                }
+            } catch (error) {
+                result.style.backgroundColor = '#f8d7da';
+                result.innerHTML = `❌ Error: ${error.message}. Make sure the dev server is running.`;
+            }
+        }
+    </script>
+</body>
+</html>

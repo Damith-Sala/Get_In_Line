@@ -38,3 +38,4 @@ describe('Home Page', () => {
     expect(screen.getByRole('link', { name: /login/i })).toHaveAttribute('href', '/login')
   })
 })
+

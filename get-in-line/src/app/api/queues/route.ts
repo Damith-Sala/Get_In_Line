@@ -112,8 +112,12 @@ export async function POST(request: Request) {
     const userRole = userRecord[0].role;
     const userBusinessId = userRecord[0].businessId;
 
+    console.log('User role:', userRole);
+    console.log('User business ID:', userBusinessId);
+
     // Only allow business users (staff, admin, super_admin) to create queues
     if (!['staff', 'business_admin', 'super_admin'].includes(userRole)) {
+      console.log('❌ User role not allowed:', userRole);
       return NextResponse.json({ 
         error: 'Only business accounts can create queues' 
       }, { status: 403 });
@@ -121,6 +125,7 @@ export async function POST(request: Request) {
 
     // Ensure user has a business association
     if (!userBusinessId) {
+      console.log('❌ User has no business association');
       return NextResponse.json({ 
         error: 'User must be associated with a business to create queues' 
       }, { status: 403 });
@@ -128,8 +133,11 @@ export async function POST(request: Request) {
 
     // Check if user has permission to create queues (for staff members)
     if (userRole === 'staff') {
+      console.log('🔍 Checking staff permissions for user:', user.id, 'business:', userBusinessId);
       const canCreate = await hasPermission(user.id, userBusinessId, 'canCreateQueues');
+      console.log('✅ Staff can create queues:', canCreate);
       if (!canCreate) {
+        console.log('❌ Staff user lacks create permission');
         return NextResponse.json({ 
           error: 'You do not have permission to create queues. Contact your business admin.' 
         }, { status: 403 });

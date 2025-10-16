@@ -61,8 +61,7 @@ export async function GET() {
         updatedAt: users.updatedAt
       })
       .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1);
+      .where(eq(users.id, user.id));
 
     console.log('User record found:', userRecord.length > 0);
 

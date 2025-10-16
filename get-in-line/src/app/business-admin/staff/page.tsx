@@ -27,18 +27,18 @@ export default function BusinessAdminStaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [permissions, setPermissions] = useState<StaffPermissions>({
-    canCreateQueues: false,
-    canEditQueues: false,
-    canDeleteQueues: false,
+    canCreateQueues: true,  // ✅ Fixed: Match DEFAULT_STAFF_PERMISSIONS
+    canEditQueues: true,    // ✅ Fixed: Match DEFAULT_STAFF_PERMISSIONS
+    canDeleteQueues: true,  // ✅ Fixed: Match DEFAULT_STAFF_PERMISSIONS
     canManageQueueOperations: true,
-    canViewAnalytics: false,
+    canViewAnalytics: true, // ✅ Fixed: Match DEFAULT_STAFF_PERMISSIONS
     canManageStaff: false,
-    canSendNotifications: false,
+    canSendNotifications: true, // ✅ Fixed: Match DEFAULT_STAFF_PERMISSIONS
     canViewStaff: true,
     canExportData: false,
     canEditBusinessSettings: false,
     canManageBranches: false,
-    canManageNotifications: false,
+    canManageNotifications: true, // ✅ Fixed: Match DEFAULT_STAFF_PERMISSIONS
   });
   const [loading, setLoading] = useState(true);
   const [businessId, setBusinessId] = useState<string>('');

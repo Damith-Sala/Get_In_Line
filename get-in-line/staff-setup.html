@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Access Setup</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.success {
+            background-color: #28a745;
+        }
+        .button.warning {
+            background-color: #ffc107;
+            color: black;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .status.warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👥 Staff Dashboard Access Setup</h1>
+        <p>This tool helps you get proper staff access to the staff dashboard.</p>
+        
+        <div class="step">
+            <h3>Step 1: Check Your Current Status</h3>
+            <button class="button" onclick="checkStatus()">Check My Status</button>
+            <div id="status-result"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Get Staff Access (Choose One)</h3>
+            
+            <h4>Option A: Create a Business Account (Recommended)</h4>
+            <p>This makes you a business_admin with full access to all features.</p>
+            <a href="/business-admin/create" class="button success" target="_blank">
+                🏢 Create Business Account
+            </a>
+            
+            <h4>Option B: Get Added as Staff</h4>
+            <p>Ask a business owner to add you as staff member.</p>
+            <button class="button warning" onclick="showBusinesses()">Show Available Businesses</button>
+            <div id="businesses-list"></div>
+            
+            <h4>Option C: Use Super Admin (Temporary)</h4>
+            <p>For testing purposes only.</p>
+            <a href="/super-admin/login" class="button" target="_blank">
+                🔧 Super Admin Login
+            </a>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Test Staff Dashboard Access</h3>
+            <button class="button" onclick="testAccess()">Test Staff Dashboard</button>
+            <div id="test-result"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Quick Links</h3>
+            <a href="/login" class="button" target="_blank">Login</a>
+            <a href="/staff-dashboard" class="button" target="_blank">Staff Dashboard</a>
+            <a href="/dashboard" class="button" target="_blank">User Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            const result = document.getElementById('status-result');
+            result.innerHTML = 'Checking...';
+            
+            try {
+                const response = await fetch('/api/users/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    const allowedRoles = ['staff', 'business_admin', 'super_admin'];
+                    const hasValidRole = allowedRoles.includes(data.role);
+                    const hasBusiness = !!data.businessId;
+                    
+                    let statusClass = 'error';
+                    let statusText = '';
+                    
+                    if (!hasValidRole) {
+                        statusText = `❌ Role Issue: Your role is "${data.role}" but staff dashboard requires: ${allowedRoles.join(', ')}`;
+                    } else if (!hasBusiness) {
+                        statusText = `⚠️ Business Issue: You have valid role "${data.role}" but no business association`;
+                        statusClass = 'warning';
+                    } else {
+                        statusText = `✅ Perfect! You have role "${data.role}" and business association. You should be able to access the staff dashboard.`;
+                        statusClass = 'success';
+                    }
+                    
+                    result.className = `status ${statusClass}`;
+                    result.innerHTML = `
+                        <strong>Current Status:</strong><br>
+                        Role: ${data.role}<br>
+                        Business ID: ${data.businessId || 'None'}<br><br>
+                        ${statusText}
+                    `;
+                } else {
+                    result.className = 'status error';
+                    result.innerHTML = `❌ Not logged in. Please log in first.`;
+                }
+            } catch (error) {
+                result.className = 'status error';
+                result.innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function showBusinesses() {
+            const result = document.getElementById('businesses-list');
+            result.innerHTML = 'Loading businesses...';
+            
+            try {
+                // This would need a proper API endpoint to list businesses
+                result.innerHTML = `
+                    <div class="status warning">
+                        <strong>Available Businesses:</strong><br>
+                        • b1_test<br>
+                        • b1<br>
+                        • Dam_Business1<br>
+                        • Dam_Business_new_admin<br><br>
+                        <strong>To get added as staff:</strong><br>
+                        1. Contact the owner of one of these businesses<br>
+                        2. Ask them to go to /business-admin/staff<br>
+                        3. Have them add you as a staff member
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="status error">Error loading businesses: ${error.message}</div>`;
+            }
+        }
+        
+        async function testAccess() {
+            const result = document.getElementById('test-result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/staff-dashboard');
+                if (response.ok) {
+                    result.className = 'status success';
+                    result.innerHTML = '✅ SUCCESS! Staff dashboard is accessible. You can navigate there now.';
+                } else {
+                    result.className = 'status error';
+                    result.innerHTML = `❌ Still not accessible. Status: ${response.status}. Make sure you have the right role and business association.`;
+                }
+            } catch (error) {
+                result.className = 'status error';
+                result.innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        // Auto-check status on page load
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

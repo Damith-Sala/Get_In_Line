@@ -94,6 +94,12 @@ export const QUEUE_MANAGER_PERMISSIONS: StaffPermissions = {
  */
 export async function getUserPermissions(userId: string, businessId: string): Promise<StaffPermissions> {
   try {
+    // Validate inputs
+    if (!userId || !businessId) {
+      console.warn('getUserPermissions: Missing userId or businessId', { userId, businessId });
+      return DEFAULT_STAFF_PERMISSIONS;
+    }
+
     // Get user's staff record with permissions
     const staffRecord = await db
       .select()
@@ -113,36 +119,59 @@ export async function getUserPermissions(userId: string, businessId: string): Pr
         .where(eq(users.id, userId))
         .limit(1);
 
-      if (userRecord.length > 0 && userRecord[0].role === 'business_admin') {
-        return ADMIN_PERMISSIONS;
+      if (userRecord.length > 0) {
+        const user = userRecord[0];
+        
+        // Check if user is business admin for this business
+        if (user.role === 'business_admin' && user.businessId === businessId) {
+          return ADMIN_PERMISSIONS;
+        }
+        
+        // Check if user is super admin
+        if (user.role === 'super_admin') {
+          return ADMIN_PERMISSIONS;
+        }
       }
       
       // Default staff permissions for users without explicit staff records
-      // Only give basic permissions - Business Admin must explicitly grant queue management
+      console.log(`No staff record found for user ${userId} in business ${businessId}, using default permissions`);
       return DEFAULT_STAFF_PERMISSIONS;
     }
 
     const staff = staffRecord[0];
     
-    // Parse permissions from JSON
+    // Parse permissions from JSON with better error handling
     let permissions: StaffPermissions;
     try {
-      permissions = staff.permissions ? JSON.parse(staff.permissions) : DEFAULT_STAFF_PERMISSIONS;
-    } catch {
+      if (staff.permissions) {
+        const parsed = JSON.parse(staff.permissions);
+        // Validate that parsed permissions have the right structure
+        if (typeof parsed === 'object' && parsed !== null) {
+          permissions = { ...DEFAULT_STAFF_PERMISSIONS, ...parsed };
+        } else {
+          permissions = DEFAULT_STAFF_PERMISSIONS;
+        }
+      } else {
+        permissions = DEFAULT_STAFF_PERMISSIONS;
+      }
+    } catch (parseError) {
+      console.error('Error parsing staff permissions JSON:', parseError, 'Raw permissions:', staff.permissions);
       permissions = DEFAULT_STAFF_PERMISSIONS;
     }
 
-    // Apply role-based defaults
+    // Apply role-based defaults with proper merging
     switch (staff.role) {
       case 'admin':
         return { ...ADMIN_PERMISSIONS, ...permissions };
       case 'manager':
         return { ...MANAGER_PERMISSIONS, ...permissions };
+      case 'queue_manager':
+        return { ...QUEUE_MANAGER_PERMISSIONS, ...permissions };
       default:
         return { ...DEFAULT_STAFF_PERMISSIONS, ...permissions };
     }
   } catch (error) {
-    console.error('Error getting user permissions:', error);
+    console.error('Error getting user permissions:', error, { userId, businessId });
     return DEFAULT_STAFF_PERMISSIONS;
   }
 }
@@ -160,10 +189,19 @@ export async function hasPermission(
   permission: keyof StaffPermissions
 ): Promise<boolean> {
   try {
+    // Validate inputs
+    if (!userId || !businessId || !permission) {
+      console.warn('hasPermission: Missing required parameters', { userId, businessId, permission });
+      return false;
+    }
+
     const permissions = await getUserPermissions(userId, businessId);
-    return permissions[permission];
+    const hasPermission = permissions[permission];
+    
+    console.log(`Permission check: ${permission} for user ${userId} in business ${businessId}: ${hasPermission}`);
+    return hasPermission;
   } catch (error) {
-    console.error('Error checking permission:', error);
+    console.error('Error checking permission:', error, { userId, businessId, permission });
     return false;
   }
 }

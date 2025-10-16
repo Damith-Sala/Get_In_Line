@@ -36,3 +36,4 @@ describe('Auth Error Page', () => {
     expect(errorIcon).toBeInTheDocument()
   })
 })
+

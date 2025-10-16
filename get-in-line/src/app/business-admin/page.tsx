@@ -89,19 +89,21 @@ export default function BusinessAdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [userPermissions, setUserPermissions] = useState<StaffPermissions | null>(null);
   const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
 
   const supabase = createClient();
 
-  // Add role-based access control
+  // Add role-based access control - check after user role is loaded
   useEffect(() => {
-    if (user && !['business_admin', 'staff', 'super_admin'].includes(user.role)) {
-      // Redirect regular users away from business admin
+    // Only redirect if we have a role and it's not allowed
+    if (userRole && userRole !== 'user' && !['business_admin', 'staff', 'super_admin'].includes(userRole)) {
+      console.log('Business admin page: Redirecting user with role:', userRole);
       window.location.href = '/dashboard';
       return;
     }
-  }, [user]);
+  }, [userRole]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -160,6 +162,10 @@ export default function BusinessAdminPage() {
         
         const userData = await usersResponse.json();
         console.log('Business admin dashboard: User data received:', userData);
+        
+        // Set user role for access control
+        console.log('Business admin page: Setting user role to:', userData.role);
+        setUserRole(userData.role || 'user');
         
         if (!userData.businessId) {
           console.log('Business admin dashboard: No business ID found');

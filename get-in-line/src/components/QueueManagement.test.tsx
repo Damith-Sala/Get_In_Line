@@ -1,72 +1,104 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import QueueManagement from './QueueManagement'
 
-// Mock the hooks and dependencies
-vi.mock('@/hooks/useSupabaseRealtime', () => ({
-  useSupabaseRealtime: vi.fn(() => ({
-    subscribe: vi.fn(),
-    unsubscribe: vi.fn()
-  }))
-}))
-
-vi.mock('@/lib/supabase', () => ({
-  createClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ data: [], error: null }))
-      }))
-    }))
-  }))
-}))
+// Mock fetch globally
+global.fetch = vi.fn()
 
 describe('QueueManagement', () => {
-  it('renders queue management interface', () => {
-    render(<QueueManagement />)
-    
-    // Check if the component renders without crashing
-    expect(screen.getByRole('main')).toBeInTheDocument()
-  })
-
-  it('displays queue information when data is available', async () => {
-    // Mock queue data
-    const mockQueueData = [
+  const mockProps = {
+    businessId: 'test-business-id',
+    queues: [
       {
         id: '1',
         name: 'Test Queue',
+        description: 'Test Description',
+        service_type: 'Test Service',
+        max_size: 10,
+        is_active: true,
+        estimated_wait_time: 5,
         current_position: 1,
-        estimated_wait_time: 5
+        total_waiting: 3,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z'
       }
-    ]
+    ],
+    onQueuesChange: vi.fn(),
+    onQueueSelect: vi.fn(),
+    userPermissions: {
+      canCreateQueues: true,
+      canEditQueues: true,
+      canDeleteQueues: true
+    }
+  }
 
-    // Mock the API response
-    vi.mock('@/lib/supabase', () => ({
-      createClient: vi.fn(() => ({
-        from: vi.fn(() => ({
-          select: vi.fn(() => ({
-            eq: vi.fn(() => Promise.resolve({ data: mockQueueData, error: null }))
-          }))
-        }))
-      }))
-    }))
-
-    render(<QueueManagement />)
-    
-    // Wait for data to load and check if queue name is displayed
-    // Note: This is a basic test structure - you'll need to adjust based on your actual component
-    expect(screen.getByRole('main')).toBeInTheDocument()
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([])
+    } as Response)
   })
 
-  it('handles user interactions correctly', async () => {
+  it('renders queue management interface', () => {
+    render(<QueueManagement {...mockProps} />)
+    
+    expect(screen.getByText('Queue Management')).toBeInTheDocument()
+    expect(screen.getByText('Create and manage your business queues')).toBeInTheDocument()
+  })
+
+  it('displays queue information when data is available', () => {
+    render(<QueueManagement {...mockProps} />)
+    
+    expect(screen.getByText('Test Queue')).toBeInTheDocument()
+    expect(screen.getByText('Test Description')).toBeInTheDocument()
+    expect(screen.getByText('Service: Test Service')).toBeInTheDocument()
+    expect(screen.getByText('Capacity: 10 people')).toBeInTheDocument()
+  })
+
+  it('shows create queue button when user has permissions', () => {
+    render(<QueueManagement {...mockProps} />)
+    
+    expect(screen.getByText('Create Queue')).toBeInTheDocument()
+  })
+
+  it('hides create queue button when user lacks permissions', () => {
+    const propsWithoutCreatePermission = {
+      ...mockProps,
+      userPermissions: {
+        canCreateQueues: false,
+        canEditQueues: true,
+        canDeleteQueues: true
+      }
+    }
+    
+    render(<QueueManagement {...propsWithoutCreatePermission} />)
+    
+    expect(screen.queryByText('Create Queue')).not.toBeInTheDocument()
+  })
+
+  it('shows empty state when no queues exist', () => {
+    const propsWithNoQueues = {
+      ...mockProps,
+      queues: []
+    }
+    
+    render(<QueueManagement {...propsWithNoQueues} />)
+    
+    expect(screen.getByText('No Queues Yet')).toBeInTheDocument()
+    expect(screen.getByText('Create your first queue to start managing customer flow.')).toBeInTheDocument()
+  })
+
+  it('handles create queue dialog opening', async () => {
     const user = userEvent.setup()
-    render(<QueueManagement />)
+    render(<QueueManagement {...mockProps} />)
     
-    // Test user interactions
-    // This is a placeholder - adjust based on your actual component's interactive elements
-    const mainElement = screen.getByRole('main')
-    expect(mainElement).toBeInTheDocument()
+    const createButton = screen.getByText('Create Queue')
+    await user.click(createButton)
     
-    // Add more specific interaction tests based on your component's functionality
+    expect(screen.getByText('Create New Queue')).toBeInTheDocument()
+    expect(screen.getByText('Set up a new queue for customers to join.')).toBeInTheDocument()
   })
 })
+

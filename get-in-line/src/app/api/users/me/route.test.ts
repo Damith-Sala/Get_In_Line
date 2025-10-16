@@ -30,11 +30,21 @@ vi.mock('@/lib/db', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          leftJoin: vi.fn(() => ({
-            leftJoin: vi.fn(() => Promise.resolve([]))
-          }))
-        }))
+        where: vi.fn(() => Promise.resolve([]))
+      }))
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        returning: vi.fn(() => Promise.resolve([{
+          id: 'test-user-id',
+          email: 'test@example.com',
+          name: 'Test User',
+          role: 'user',
+          businessId: null,
+          notificationPreferences: '{}',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }]))
       }))
     }))
   }
@@ -88,7 +98,10 @@ describe('/api/users/me', () => {
           data: {
             user: {
               id: 'test-user-id',
-              email: 'test@example.com'
+              email: 'test@example.com',
+              user_metadata: {
+                name: 'Test User'
+              }
             }
           },
           error: null
@@ -99,5 +112,10 @@ describe('/api/users/me', () => {
     const response = await GET()
     
     expect(response.status).toBe(200)
+    
+    const responseData = await response.json()
+    expect(responseData.user).toBeDefined()
+    expect(responseData.user.id).toBe('test-user-id')
+    expect(responseData.user.email).toBe('test@example.com')
   })
 })

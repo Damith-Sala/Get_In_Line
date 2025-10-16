@@ -27,3 +27,4 @@ describe('Signup Page', () => {
     expect(document.body).toBeInTheDocument()
   })
 })
+
