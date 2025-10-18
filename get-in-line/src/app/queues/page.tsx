@@ -185,7 +185,7 @@ export default function QueuesPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Available Queues">
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <Skeleton className="h-8 w-48" />
@@ -214,7 +214,7 @@ export default function QueuesPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Available Queues">
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Available Queues</h1>

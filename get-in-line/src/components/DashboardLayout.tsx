@@ -7,9 +7,10 @@ import { NavigationSidebar } from './NavigationSidebar';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  title?: string;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, title = "Dashboard" }: DashboardLayoutProps) {
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
@@ -85,7 +86,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Top Header */}
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="px-6 py-4">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <h1 className="text-2xl font-bold">{title}</h1>
           </div>
         </header>
 

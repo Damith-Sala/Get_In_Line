@@ -340,7 +340,7 @@ export default function StaffDashboard() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Staff Dashboard">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading staff dashboard...</p>
@@ -351,7 +351,7 @@ export default function StaffDashboard() {
 
   if (error) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Staff Dashboard">
         <Card className="w-full max-w-md mx-auto">
           <CardHeader>
             <CardTitle className="text-red-600">Error</CardTitle>
@@ -374,7 +374,7 @@ export default function StaffDashboard() {
 
   if (!business) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Staff Dashboard">
         <Card className="w-full max-w-md mx-auto">
           <CardHeader>
             <CardTitle>No Business Found</CardTitle>
@@ -391,7 +391,7 @@ export default function StaffDashboard() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Staff Dashboard">
       <div className="space-y-6">
         {/* Header */}
         <header className="mb-8">

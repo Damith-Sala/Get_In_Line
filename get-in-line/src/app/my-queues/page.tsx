@@ -165,7 +165,7 @@ export default function MyQueuesPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="My Queues">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -189,7 +189,7 @@ export default function MyQueuesPage() {
 
   if (!user) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="My Queues">
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm" asChild>
@@ -225,7 +225,7 @@ export default function MyQueuesPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="My Queues">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

@@ -17,7 +17,7 @@ import {
 
 export default function DashboardPage() {
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Dashboard">
       <div className="space-y-6">
         {/* Welcome Section */}
         <div className="space-y-2">
