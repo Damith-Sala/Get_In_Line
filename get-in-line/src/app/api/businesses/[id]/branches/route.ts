@@ -155,3 +155,128 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const businessId = params.id;
+    const { searchParams } = new URL(request.url);
+    const branchId = searchParams.get('branchId');
+    
+    if (!branchId) {
+      return NextResponse.json(
+        { error: 'Branch ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Get authenticated user
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options });
+          },
+          remove(name: string, options: any) {
+            cookieStore.delete({ name, ...options });
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    // Check if user has permission to manage this business
+    const hasAccess = await hasBusinessAccess(user.id, businessId);
+    
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    const business = await db
+      .select()
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
+      .limit(1);
+
+    if (business.length === 0) {
+      return NextResponse.json({ error: 'Business not found' }, { status: 404 });
+    }
+
+    // Get user record to check role
+    const userRecord = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+
+    if (userRecord.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const userBusiness = userRecord[0];
+
+    // Check authorization: user must be either:
+    // 1. The business owner, OR
+    // 2. A super admin, OR  
+    // 3. An admin with access to this business
+    const isOwner = business[0].ownerId === user.id;
+    const isSuperAdmin = userBusiness.role === 'super_admin';
+    const isAdminWithAccess = userBusiness.role === 'business_admin' && userBusiness.businessId === businessId;
+
+    if (!isOwner && !isSuperAdmin && !isAdminWithAccess) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    // Check if branch exists and belongs to this business
+    const branchRecord = await db
+      .select()
+      .from(branches)
+      .where(and(eq(branches.id, branchId), eq(branches.businessId, businessId)))
+      .limit(1);
+
+    if (branchRecord.length === 0) {
+      return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
+    }
+
+    // Check if branch has any active queues
+    const { queues } = await import('@/lib/drizzle/schema');
+    const activeQueues = await db
+      .select()
+      .from(queues)
+      .where(and(eq(queues.branchId, branchId), eq(queues.isActive, true)))
+      .limit(1);
+
+    if (activeQueues.length > 0) {
+      return NextResponse.json({ 
+        error: 'Cannot delete branch with active queues. Please deactivate or delete all queues first.' 
+      }, { status: 400 });
+    }
+
+    // Delete the branch
+    await db.delete(branches).where(eq(branches.id, branchId));
+
+    return NextResponse.json({ 
+      message: 'Branch deleted successfully' 
+    });
+
+  } catch (error) {
+    console.error('Delete branch error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete branch' },
+      { status: 500 }
+    );
+  }
+}

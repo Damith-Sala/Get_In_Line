@@ -6,6 +6,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import RealTimeQueue from '@/components/RealTimeQueue';
 import QueueManagement from '@/components/QueueManagement';
+import { APP_CONFIG } from '@/lib/config';
+import { useRealtimeAnalytics } from '@/hooks/useRealtimeAnalytics';
+import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 // import { getUserPermissions, StaffPermissions } from '@/lib/permission-helpers';
 
 interface StaffPermissions {
@@ -56,37 +59,12 @@ interface Queue {
   updated_at: string;
 }
 
-interface Analytics {
-  summary: {
-    totalQueues: number;
-    totalEntries: number;
-    averageWaitTime: number;
-    peakHour: number;
-    completedServices: number;
-    cancelledServices: number;
-  };
-  dailyStats: Array<{
-    date: string;
-    totalEntries: number;
-    completedServices: number;
-    cancelledServices: number;
-  }>;
-  queueStats: Array<{
-    queueId: string;
-    queueName: string;
-    serviceType: string | null;
-    totalEntries: number;
-    completedServices: number;
-    cancelledServices: number;
-    averageWaitTime: number;
-  }>;
-}
+// Analytics interface is now imported from useRealtimeAnalytics hook
 
 export default function BusinessAdminPage() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [queues, setQueues] = useState<Queue[]>([]);
-  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -94,14 +72,62 @@ export default function BusinessAdminPage() {
   const [userPermissions, setUserPermissions] = useState<StaffPermissions | null>(null);
   const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
 
+  // Real-time analytics hook
+  const {
+    analytics,
+    loading: analyticsLoading,
+    error: analyticsError,
+    lastUpdated,
+    refresh: refreshAnalytics,
+  } = useRealtimeAnalytics({
+    businessId: business?.id || '',
+    enabled: !!business?.id && !!userPermissions?.canViewAnalytics,
+  });
+
   const supabase = createClient();
+
+  // Real-time updates hook
+  const { isConnected, connectionError } = useRealtimeUpdates({
+    businessId: business?.id || '',
+    enabled: !!business?.id,
+    onQueueUpdate: (data) => {
+      console.log('Real-time queue update:', data);
+      // Update queues state with real-time data
+      setQueues(prevQueues => 
+        prevQueues.map(queue => 
+          queue.id === data.queueId 
+            ? { ...queue, ...data.updates }
+            : queue
+        )
+      );
+    },
+    onAnalyticsUpdate: () => {
+      console.log('Real-time analytics update');
+      refreshAnalytics();
+    },
+    onBranchUpdate: (data) => {
+      console.log('Real-time branch update:', data);
+      // Update branches state with real-time data
+      if (data.action === 'delete') {
+        setBranches(prevBranches => prevBranches.filter(branch => branch.id !== data.branchId));
+      } else {
+        setBranches(prevBranches => 
+          prevBranches.map(branch => 
+            branch.id === data.branchId 
+              ? { ...branch, ...data.updates }
+              : branch
+          )
+        );
+      }
+    },
+  });
 
   // Add role-based access control - check after user role is loaded
   useEffect(() => {
     // Only redirect if we have a role and it's not allowed
-    if (userRole && userRole !== 'user' && !['business_admin', 'staff', 'super_admin'].includes(userRole)) {
+    if (userRole && userRole !== APP_CONFIG.ROLES.DEFAULT_ROLE && !APP_CONFIG.ROLES.ALLOWED_BUSINESS_ROLES.includes(userRole as any)) {
       console.log('Business admin page: Redirecting user with role:', userRole);
-      window.location.href = '/dashboard';
+      window.location.href = APP_CONFIG.ROUTES.DASHBOARD;
       return;
     }
   }, [userRole]);
@@ -127,10 +153,10 @@ export default function BusinessAdminPage() {
         timeoutId = setTimeout(() => {
           if (isMounted) {
             console.log('Business admin dashboard: Timeout reached');
-            setError('Loading is taking longer than expected. Please check your connection and try again.');
+            setError(APP_CONFIG.MESSAGES.LOADING.TIMEOUT);
             setLoading(false);
           }
-        }, 30000); // 30 second timeout
+        }, APP_CONFIG.TIMEOUTS.LOADING_TIMEOUT);
 
         // Get current user
         console.log('Business admin dashboard: Getting current user...');
@@ -142,7 +168,7 @@ export default function BusinessAdminPage() {
 
         if (!user) {
           console.log('Business admin dashboard: No user found');
-          setError('Please log in to access business admin features');
+          setError(APP_CONFIG.MESSAGES.ERRORS.LOGIN_REQUIRED);
           return;
         }
 
@@ -150,7 +176,7 @@ export default function BusinessAdminPage() {
 
         // Get user's business using new efficient endpoint
         console.log('Business admin dashboard: Fetching user data...');
-        const usersResponse = await fetch('/api/users/me');
+        const usersResponse = await fetch(APP_CONFIG.API_ENDPOINTS.USERS.ME);
         
         if (!isMounted) return; // Check again after async operation
         
@@ -166,11 +192,11 @@ export default function BusinessAdminPage() {
         
         // Set user role for access control
         console.log('Business admin page: Setting user role to:', userData.role);
-        setUserRole(userData.role || 'user');
+        setUserRole(userData.role || APP_CONFIG.ROLES.DEFAULT_ROLE);
         
         if (!userData.businessId) {
           console.log('Business admin dashboard: No business ID found');
-          setError('No business associated with your account');
+          setError(APP_CONFIG.MESSAGES.ERRORS.NO_BUSINESS);
           return;
         }
 
@@ -179,50 +205,24 @@ export default function BusinessAdminPage() {
 
         // Get user permissions via API
         try {
-          const permissionsResponse = await fetch('/api/users/me/permissions');
+          const permissionsResponse = await fetch(APP_CONFIG.API_ENDPOINTS.USERS.PERMISSIONS);
           if (permissionsResponse.ok) {
             const permissionsData = await permissionsResponse.json();
             setUserPermissions(permissionsData.permissions);
             console.log('User permissions:', permissionsData.permissions);
           } else {
             // Set default permissions for business admin
-            setUserPermissions({
-              canCreateQueues: true,
-              canEditQueues: true,
-              canDeleteQueues: true,
-              canManageQueueOperations: true,
-              canManageStaff: true,
-              canViewStaff: true,
-              canViewAnalytics: true,
-              canExportData: true,
-              canEditBusinessSettings: true,
-              canManageBranches: true,
-              canSendNotifications: true,
-              canManageNotifications: true,
-            });
+            setUserPermissions(APP_CONFIG.DEFAULT_BUSINESS_ADMIN_PERMISSIONS);
           }
         } catch (permError) {
           console.error('Error fetching permissions:', permError);
           // Set default permissions for business admin
-          setUserPermissions({
-            canCreateQueues: true,
-            canEditQueues: true,
-            canDeleteQueues: true,
-            canManageQueueOperations: true,
-            canManageStaff: true,
-            canViewStaff: true,
-            canViewAnalytics: true,
-            canExportData: true,
-            canEditBusinessSettings: true,
-            canManageBranches: true,
-            canSendNotifications: true,
-            canManageNotifications: true,
-          });
+          setUserPermissions(APP_CONFIG.DEFAULT_BUSINESS_ADMIN_PERMISSIONS);
         }
 
         // Fetch business details using API
         console.log('Business admin dashboard: Fetching business data...');
-        const businessResponse = await fetch(`/api/businesses/${businessId}`);
+        const businessResponse = await fetch(APP_CONFIG.API_ENDPOINTS.BUSINESSES.BY_ID(businessId));
         
         if (!isMounted) return; // Check again after async operation
         
@@ -238,7 +238,7 @@ export default function BusinessAdminPage() {
         setBusiness(businessData);
 
         // Fetch branches using API
-        const branchesResponse = await fetch(`/api/businesses/${businessId}/branches`);
+        const branchesResponse = await fetch(APP_CONFIG.API_ENDPOINTS.BUSINESSES.BRANCHES(businessId));
         if (!isMounted) return; // Check again after async operation
         
         if (branchesResponse.ok) {
@@ -249,7 +249,7 @@ export default function BusinessAdminPage() {
         }
 
         // Fetch queues using API
-        const queuesResponse = await fetch('/api/queues');
+        const queuesResponse = await fetch(APP_CONFIG.API_ENDPOINTS.QUEUES);
         if (!isMounted) return; // Check again after async operation
         
         if (queuesResponse.ok) {
@@ -271,23 +271,12 @@ export default function BusinessAdminPage() {
           setQueues([]);
         }
 
-        // Fetch analytics
-        try {
-          const analyticsResponse = await fetch(`/api/businesses/${businessId}/analytics?days=7`);
-          if (!isMounted) return; // Check again after async operation
-          
-          if (analyticsResponse.ok) {
-            const analyticsData = await analyticsResponse.json();
-            setAnalytics(analyticsData);
-          }
-        } catch (analyticsError) {
-          console.error('Analytics error:', analyticsError);
-        }
+        // Analytics are now handled by the useRealtimeAnalytics hook
 
       } catch (err: any) {
         if (isMounted) {
           console.error('Business admin dashboard: Error in loadData:', err);
-          setError(`Dashboard loading failed: ${err.message}`);
+          setError(`${APP_CONFIG.MESSAGES.ERRORS.DASHBOARD_FAILED}: ${err.message}`);
         }
       } finally {
         if (isMounted) {
@@ -312,11 +301,11 @@ export default function BusinessAdminPage() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      window.location.href = '/login';
+      window.location.href = APP_CONFIG.ROUTES.LOGIN;
     } catch (error) {
       console.error('Sign out error:', error);
       // Force redirect even if sign out fails
-      window.location.href = '/login';
+      window.location.href = APP_CONFIG.ROUTES.LOGIN;
     }
   };
 
@@ -327,14 +316,47 @@ export default function BusinessAdminPage() {
   const handleQueueSelect = (queue: Queue) => {
     setSelectedQueue(queue);
     // Navigate to the detailed queue management page
-    window.location.href = `/business-admin/queues/${queue.id}`;
+    window.location.href = APP_CONFIG.ROUTES.BUSINESS_ADMIN.QUEUES(queue.id);
+  };
+
+  const handleDeleteBranch = async (branchId: string) => {
+    if (!business?.id) return;
+    
+    if (!confirm(APP_CONFIG.MESSAGES.CONFIRMATIONS.DELETE_BRANCH)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`${APP_CONFIG.API_ENDPOINTS.BUSINESSES.BRANCHES(business.id)}?branchId=${branchId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || APP_CONFIG.MESSAGES.ERRORS.DELETE_BRANCH_FAILED);
+      }
+
+      // Remove the branch from the local state
+      setBranches(prevBranches => prevBranches.filter(branch => branch.id !== branchId));
+      
+      // Show success message
+      alert(APP_CONFIG.MESSAGES.SUCCESS.BRANCH_DELETED);
+      
+    } catch (error: any) {
+      console.error('Delete branch error:', error);
+      alert(`${APP_CONFIG.MESSAGES.ERRORS.DELETE_BRANCH_FAILED}: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
     return (
       <DashboardLayout title="Business Admin">
         <div className="text-center">
-          <div className="text-gray-600">Loading business dashboard...</div>
+          <div className="text-gray-600">{APP_CONFIG.MESSAGES.LOADING.DASHBOARD}</div>
         </div>
       </DashboardLayout>
     );
@@ -346,7 +368,7 @@ export default function BusinessAdminPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
           <p className="text-red-600">{error}</p>
-          <Link href="/dashboard" className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <Link href={APP_CONFIG.ROUTES.DASHBOARD} className={`mt-4 inline-block ${APP_CONFIG.STYLES.BUTTONS.PRIMARY}`}>
             Back to Dashboard
           </Link>
         </div>
@@ -360,7 +382,7 @@ export default function BusinessAdminPage() {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
           <h2 className="text-xl font-semibold text-yellow-800 mb-2">No Business Found</h2>
           <p className="text-yellow-600 mb-4">You don't have a business account yet.</p>
-          <Link href="/business-admin/create" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          <Link href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.CREATE} className={APP_CONFIG.STYLES.BUTTONS.SUCCESS}>
             Create Business Account
           </Link>
         </div>
@@ -384,22 +406,35 @@ export default function BusinessAdminPage() {
                 <p className="text-gray-500 mt-2">{business.description}</p>
               )}
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
+              {/* Real-time connection status */}
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-sm text-gray-600">
+                  {isConnected ? 'Live' : 'Offline'}
+                </span>
+                {lastUpdated && (
+                  <span className="text-xs text-gray-500">
+                    Updated: {lastUpdated.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+              
               <Link 
-                href="/dashboard" 
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                href={APP_CONFIG.ROUTES.DASHBOARD} 
+                className={APP_CONFIG.STYLES.BUTTONS.SECONDARY}
               >
                 User Dashboard
               </Link>
               <Link 
-                href="/profile" 
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                href={APP_CONFIG.ROUTES.PROFILE} 
+                className={APP_CONFIG.STYLES.BUTTONS.PRIMARY}
               >
                 Profile Settings
               </Link>
               <button 
                 onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                className={APP_CONFIG.STYLES.BUTTONS.DANGER}
               >
                 Sign Out
               </button>
@@ -414,8 +449,8 @@ export default function BusinessAdminPage() {
             <div className="flex flex-wrap gap-3">
               {userPermissions?.canCreateQueues && (
                 <Link 
-                  href="/queues/create" 
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                  href={APP_CONFIG.ROUTES.QUEUES.CREATE} 
+                  className={`${APP_CONFIG.STYLES.BUTTONS.PRIMARY} flex items-center gap-2`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -425,8 +460,8 @@ export default function BusinessAdminPage() {
               )}
               {userPermissions?.canManageStaff && (
                 <Link 
-                  href="/business-admin/staff" 
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
+                  href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.STAFF} 
+                  className={`${APP_CONFIG.STYLES.BUTTONS.SUCCESS} flex items-center gap-2`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -436,8 +471,8 @@ export default function BusinessAdminPage() {
               )}
               {userPermissions?.canManageBranches && (
                 <Link 
-                  href="/business-admin/branches/create" 
-                  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2"
+                  href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.BRANCHES.CREATE} 
+                  className={`${APP_CONFIG.STYLES.BUTTONS.PURPLE} flex items-center gap-2`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -449,25 +484,47 @@ export default function BusinessAdminPage() {
           </div>
         </div>
 
-        {/* Quick Stats */}
-        {analytics && userPermissions?.canViewAnalytics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-500">Total Queues</h3>
-              <p className="text-2xl font-bold text-blue-600">{analytics.summary.totalQueues}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-500">Total Entries (7 days)</h3>
-              <p className="text-2xl font-bold text-green-600">{analytics.summary.totalEntries}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-500">Avg Wait Time</h3>
-              <p className="text-2xl font-bold text-yellow-600">{analytics.summary.averageWaitTime} min</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-500">Peak Hour</h3>
-              <p className="text-2xl font-bold text-purple-600">{analytics.summary.peakHour}:00</p>
-            </div>
+        {/* Quick Stats - Real-time Analytics */}
+        {userPermissions?.canViewAnalytics && (
+          <div className={APP_CONFIG.STYLES.GRIDS.STATS}>
+            {analyticsLoading ? (
+              <div className="col-span-full text-center py-8">
+                <div className="text-gray-600">Loading analytics...</div>
+              </div>
+            ) : analyticsError ? (
+              <div className="col-span-full text-center py-8">
+                <div className="text-red-600">Error loading analytics: {analyticsError}</div>
+                <button 
+                  onClick={refreshAnalytics}
+                  className="mt-2 text-blue-600 hover:text-blue-800"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : analytics ? (
+              <>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-sm font-medium text-gray-500">Total Queues</h3>
+                  <p className="text-2xl font-bold text-blue-600">{analytics.summary.totalQueues}</p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-sm font-medium text-gray-500">Total Entries ({APP_CONFIG.ANALYTICS.DEFAULT_DAYS} days)</h3>
+                  <p className="text-2xl font-bold text-green-600">{analytics.summary.totalEntries}</p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-sm font-medium text-gray-500">Avg Wait Time</h3>
+                  <p className="text-2xl font-bold text-yellow-600">{analytics.summary.averageWaitTime} min</p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-sm font-medium text-gray-500">Peak Hour</h3>
+                  <p className="text-2xl font-bold text-purple-600">{analytics.summary.peakHour}:00</p>
+                </div>
+              </>
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <div className="text-gray-500">No analytics data available</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -489,7 +546,7 @@ export default function BusinessAdminPage() {
         )}
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className={APP_CONFIG.STYLES.GRIDS.MAIN_CONTENT}>
 
           {/* Branches Management */}
           {userPermissions?.canManageBranches && (
@@ -498,8 +555,8 @@ export default function BusinessAdminPage() {
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold">Branches</h2>
                 <Link 
-                  href="/business-admin/branches/create" 
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.BRANCHES.CREATE} 
+                  className={APP_CONFIG.STYLES.BUTTONS.SUCCESS}
                 >
                   Add Branch
                 </Link>
@@ -522,17 +579,26 @@ export default function BusinessAdminPage() {
                             <p className="text-sm text-gray-500">{branch.phone}</p>
                           )}
                           <span className={`inline-block mt-2 px-2 py-1 rounded text-sm ${
-                            branch.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            branch.isActive ? APP_CONFIG.STYLES.STATUS.ACTIVE : APP_CONFIG.STYLES.STATUS.INACTIVE
                           }`}>
                             {branch.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
-                        <Link 
-                          href={`/business-admin/branches/${branch.id}`}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Edit
-                        </Link>
+                        <div className="flex gap-2">
+                          <Link 
+                            href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.BRANCHES.EDIT(branch.id)}
+                            className="text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteBranch(branch.id)}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                            disabled={loading}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -547,7 +613,7 @@ export default function BusinessAdminPage() {
         {queues.length > 0 && userPermissions?.canManageQueueOperations && (
           <div className="mt-8">
             <h2 className="text-2xl font-bold mb-6">Live Queue Status</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={APP_CONFIG.STYLES.GRIDS.QUEUES}>
               {queues.map((queue) => (
                 <div key={queue.id}>
                   <h3 className="text-lg font-semibold mb-2">{queue.name}</h3>
@@ -562,10 +628,10 @@ export default function BusinessAdminPage() {
         )}
 
         {/* Additional Management Links */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className={`mt-8 ${APP_CONFIG.STYLES.GRIDS.MANAGEMENT_LINKS}`}>
           {userPermissions?.canManageStaff && (
             <Link 
-              href="/business-admin/staff" 
+              href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.STAFF} 
               className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-500"
             >
             <div className="flex items-center gap-3 mb-2">
@@ -585,7 +651,7 @@ export default function BusinessAdminPage() {
           
           {userPermissions?.canViewAnalytics && (
             <Link 
-              href="/business-admin/analytics" 
+              href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.ANALYTICS} 
               className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
             >
             <h3 className="text-lg font-semibold mb-2">Analytics</h3>
@@ -595,7 +661,7 @@ export default function BusinessAdminPage() {
           
           {userPermissions?.canSendNotifications && (
             <Link 
-              href="/business-admin/notifications" 
+              href={APP_CONFIG.ROUTES.BUSINESS_ADMIN.NOTIFICATIONS} 
               className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
             >
             <h3 className="text-lg font-semibold mb-2">Notifications</h3>
