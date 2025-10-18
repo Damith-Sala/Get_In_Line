@@ -1,5 +1,6 @@
 'use client';
 
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -184,9 +185,9 @@ export default function QueuesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-8 bg-background">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
             <Skeleton className="h-8 w-48" />
             <div className="flex space-x-4">
               <Skeleton className="h-10 w-24" />
@@ -208,13 +209,13 @@ export default function QueuesPage() {
             ))}
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen p-8 bg-background">
-      <div className="max-w-6xl mx-auto">
+    <DashboardLayout>
+      <div className="space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Available Queues</h1>
           <div className="flex space-x-4">
@@ -426,6 +427,6 @@ export default function QueuesPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -339,19 +340,19 @@ export default function StaffDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <DashboardLayout>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading staff dashboard...</p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
+      <DashboardLayout>
+        <Card className="w-full max-w-md mx-auto">
           <CardHeader>
             <CardTitle className="text-red-600">Error</CardTitle>
           </CardHeader>
@@ -367,14 +368,14 @@ export default function StaffDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (!business) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
+      <DashboardLayout>
+        <Card className="w-full max-w-md mx-auto">
           <CardHeader>
             <CardTitle>No Business Found</CardTitle>
           </CardHeader>
@@ -385,13 +386,13 @@ export default function StaffDashboard() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Header */}
         <header className="mb-8">
           <div className="flex justify-between items-start">
@@ -700,6 +701,6 @@ export default function StaffDashboard() {
           </Link>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

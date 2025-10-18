@@ -1,5 +1,6 @@
 'use client';
 
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -331,51 +332,45 @@ export default function BusinessAdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <div className="text-gray-600">Loading business dashboard...</div>
-          </div>
+      <DashboardLayout>
+        <div className="text-center">
+          <div className="text-gray-600">Loading business dashboard...</div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
-            <p className="text-red-600">{error}</p>
-            <Link href="/dashboard" className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Back to Dashboard
-            </Link>
-          </div>
+      <DashboardLayout>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
+          <p className="text-red-600">{error}</p>
+          <Link href="/dashboard" className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Back to Dashboard
+          </Link>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (!business) {
     return (
-      <div className="min-h-screen p-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-yellow-800 mb-2">No Business Found</h2>
-            <p className="text-yellow-600 mb-4">You don't have a business account yet.</p>
-            <Link href="/business-admin/create" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-              Create Business Account
-            </Link>
-          </div>
+      <DashboardLayout>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-yellow-800 mb-2">No Business Found</h2>
+          <p className="text-yellow-600 mb-4">You don't have a business account yet.</p>
+          <Link href="/business-admin/create" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+            Create Business Account
+          </Link>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Header */}
         <header className="mb-8">
           <div className="flex justify-between items-start">
@@ -609,6 +604,6 @@ export default function BusinessAdminPage() {
           )}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
