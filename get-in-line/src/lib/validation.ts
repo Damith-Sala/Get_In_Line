@@ -19,8 +19,8 @@ export const businessSchema = z.object({
 // Branch validation schemas
 export const branchSchema = z.object({
   name: z.string().min(2),
-  address: z.string().optional(),
-  phone: z.string().optional(),
+  location: z.string().optional(),
+  contact_number: z.string().optional(),
   email: z.string().email().optional(),
   managerId: z.string().optional(),
 });

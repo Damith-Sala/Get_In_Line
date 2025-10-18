@@ -134,10 +134,17 @@ export async function POST(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
     
-    const newBranch = await db.insert(branches).values({
-      ...validatedData,
+    // Map assignment field names to database field names
+    const branchData = {
+      name: validatedData.name,
+      address: validatedData.location, // Map location -> address
+      phone: validatedData.contact_number, // Map contact_number -> phone
+      email: validatedData.email,
+      managerId: validatedData.managerId,
       businessId: businessId,
-    }).returning();
+    };
+
+    const newBranch = await db.insert(branches).values(branchData).returning();
 
     return NextResponse.json(newBranch[0], { status: 201 });
   } catch (error) {

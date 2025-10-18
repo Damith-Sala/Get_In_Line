@@ -51,7 +51,7 @@ export const MANAGER_PERMISSIONS: StaffPermissions = {
   canViewAnalytics: true,
   canExportData: true,
   canEditBusinessSettings: false,
-  canManageBranches: true,
+  canManageBranches: false, // Fixed: Managers cannot create branches (API restriction)
   canSendNotifications: true,
   canManageNotifications: true,
 };
