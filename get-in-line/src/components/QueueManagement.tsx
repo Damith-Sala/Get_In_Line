@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,8 +35,10 @@ import {
   Pause, 
   Users, 
   Clock,
-  Settings
+  Settings,
+  Building2
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Queue {
   id: string;
@@ -50,6 +52,15 @@ interface Queue {
   total_waiting?: number;
   created_at: string;
   updated_at: string;
+}
+
+interface Branch {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  isActive: boolean;
 }
 
 interface QueueManagementProps {
@@ -82,13 +93,34 @@ export default function QueueManagement({
   const [error, setError] = useState<string | null>(null);
 
   // Form states
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     serviceType: '',
     maxSize: '',
     estimatedWaitTime: '',
+    branchId: '',
   });
+
+  // Fetch branches when component mounts
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const response = await fetch(`/api/businesses/${businessId}/branches`);
+        if (response.ok) {
+          const branchesData = await response.json();
+          setBranches(branchesData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch branches:', error);
+      }
+    };
+
+    if (businessId) {
+      fetchBranches();
+    }
+  }, [businessId]);
 
   const resetForm = () => {
     setFormData({
@@ -97,6 +129,7 @@ export default function QueueManagement({
       serviceType: '',
       maxSize: '',
       estimatedWaitTime: '',
+      branchId: '',
     });
     setError(null);
   };
@@ -104,6 +137,11 @@ export default function QueueManagement({
   const handleCreateQueue = async () => {
     if (!formData.name.trim()) {
       setError('Queue name is required');
+      return;
+    }
+    
+    if (!formData.branchId) {
+      setError('Please select a branch for this queue');
       return;
     }
 
@@ -122,6 +160,7 @@ export default function QueueManagement({
           serviceType: formData.serviceType.trim() || null,
           maxSize: formData.maxSize && parseInt(formData.maxSize) > 0 ? parseInt(formData.maxSize) : null,
           estimatedWaitTime: formData.estimatedWaitTime && parseInt(formData.estimatedWaitTime) > 0 ? parseInt(formData.estimatedWaitTime) : null,
+          branchId: formData.branchId,
           isActive: true,
         }),
       });
@@ -266,6 +305,7 @@ export default function QueueManagement({
       serviceType: queue.service_type || '',
       maxSize: queue.max_size?.toString() || '',
       estimatedWaitTime: queue.estimated_wait_time?.toString() || '',
+      branchId: '', // Will be populated from queue data if available
     });
     setIsEditDialogOpen(true);
   };
@@ -302,6 +342,37 @@ export default function QueueManagement({
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Customer Service, Coffee Shop"
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="branchId" className="flex items-center">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Branch *
+                  </Label>
+                  <Select value={formData.branchId} onValueChange={(value) => setFormData({ ...formData, branchId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          <div className="flex items-center">
+                            <Building2 className="h-4 w-4 mr-2" />
+                            <div>
+                              <div className="font-medium">{branch.name}</div>
+                              {branch.address && (
+                                <div className="text-sm text-gray-500">{branch.address}</div>
+                              )}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {branches.length === 0 && (
+                    <p className="text-sm text-gray-500">
+                      No branches available. Please create a branch first.
+                    </p>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="description">Description</Label>

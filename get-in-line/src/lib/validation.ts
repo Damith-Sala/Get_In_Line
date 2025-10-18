@@ -30,7 +30,7 @@ export const queueSchema = z.object({
   name: z.string().min(2),
   description: z.string().optional().nullable(),
   businessId: z.string().optional(),
-  branchId: z.string().optional(),
+  branchId: z.string().min(1, "Branch selection is required"),
   serviceType: z.string().optional().nullable(),
   maxSize: z.number().positive().optional().nullable(),
   estimatedWaitTime: z.number().positive().optional().nullable(),

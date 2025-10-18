@@ -154,6 +154,7 @@ export async function POST(request: Request) {
       isActive: validatedData.isActive,
       creatorId: user.id,
       businessId: userBusinessId,
+      branchId: validatedData.branchId,
     }).returning();
     return NextResponse.json(newQueue[0], { status: 201 });
   } catch (error) {
