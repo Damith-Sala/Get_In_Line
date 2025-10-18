@@ -66,7 +66,7 @@ export const APP_CONFIG = {
       STAFF: '/business-admin/staff',
       BRANCHES: {
         CREATE: '/business-admin/branches/create',
-        EDIT: (id: string) => `/business-admin/branches/${id}`,
+        EDIT: (id: string) => `/business-admin/branches/edit/${id}`,
       },
       QUEUES: (id: string) => `/business-admin/queues/${id}`,
       ANALYTICS: '/business-admin/analytics',
